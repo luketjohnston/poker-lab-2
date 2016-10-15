@@ -1,5 +1,10 @@
 from random import randint
 
+class Card:
+	def __init__(self,rank, suit)
+		self.rank = rank
+		self.suit = suit
+
 class Player:
 	def __init__(self, buyIn):
 		self.hand = [drawCard(),drawCard()]

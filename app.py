@@ -1,12 +1,15 @@
+from flask import Flask, request
+from flask.ext.sqlalchemy import SQLAlchemy
 import os
-from flask import Flask
 app = Flask(__name__)
 app.config.from_object(os.environ['APP_SETTINGS'])
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
 
-@app.route('/')
+@app.route('/create/')
 def hello():
-	# 
-	return "Hello World!"
+	
+	return "Record created"
 
 @app.route('/<name>')
 def hello_name(name):

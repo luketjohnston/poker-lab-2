@@ -38,7 +38,7 @@ class Deck:
 
 def findPairs(hand,board):
 
-# Returns the best 5 card pair-type hand given hole cards and board 
+# Returns the best 5 card pair-type hand, hand strength tuple  
 # (high card, pair, 2 pair, 3 of a kind, full house, 4 of a kind) 
 
 
@@ -54,7 +54,7 @@ def findPairs(hand,board):
 		pairCountList.append((c1.rank,pairCount))
 	
 	pairCountList = sorted(sorted(set(pairCountList), key=lambda x: -x[0]), key=lambda x: -x[1])
-	
+
 
 	if pairCountList[0][1] == 1:
 		bestHand = rankSortedHand[:5]
@@ -80,9 +80,9 @@ def findPairs(hand,board):
 		bestHand.append([[x for x in rankSortedHand if x.rank == pairCountList[2][0]][0]])
 		return [[x for list in bestHand for x in list],4]
 
-	if pairCountList[0][1] == 3 and pairCountList[1][1] == 2:
+	if pairCountList[0][1] == 3 and (pairCountList[1][1] == 2 or pairCountList[1][1] == 3):
 		bestHand.append([x for x in rankSortedHand if x.rank == pairCountList[0][0]])
-		bestHand.append([x for x in rankSortedHand if x.rank == pairCountList[1][0]])
+		bestHand.append([x for x in rankSortedHand if x.rank == pairCountList[1][0]][:2])
 		return [[x for list in bestHand for x in list],7]
 
 	if pairCountList[0][1] == 4:
@@ -92,7 +92,7 @@ def findPairs(hand,board):
 
 def findFlush(hand, board):
 
-# returns rank sorted list of flushing cards if there are at least 5 of that suit 
+# returns rank sorted list of flushing cards if there are at least 5 of that suit, hand strength tuple
 # returns empty list if no flush
 
 	allCards = hand +board
@@ -119,37 +119,62 @@ def findFlush(hand, board):
 				
 def findStraight(hand, board):
 	
-#returns longest list of consecutively ranked cards if it is at least length 5
+#returns longest list of consecutively ranked cards if it is at least length 5, hand strength tuple
+# if multiple of the same rank card, the list includes all of them.
 #returns empty list of no straight
 
-	allCards = hand + board
-	allCards = sorted(allCards, key = lambda x: -x.rank)
-	straightList = [[allCards[-1]]]
-  	for i in range(1,len(allCards)):
-		v = allCards[i]
-		canBuildStraight = False
-		for l in straightList:
-      			if v.rank == l[-1].rank - 1:
-        			l.append(v)
-				canBuildStraight = True
-		if not canBuildStraight:
-      			straightList.append([v])
+# NOTE: in the function, the "val" of a card is its rank - 1 mod 13. 
 
-  	bestStraight= max(straightList, key=len)
-	if len(bestStraight) > 4:
-		return [bestStraight,5]
+	allCards = hand + board
+
+	allCards = sorted(allCards, key = lambda x: -x.rank)
+	# do compute straights, aces can be small and large. So go through 
+	# all the cards and add each ace to the beginning of the list. Since there can 
+	# only be 4 aces and there are 7 cards this will work fine
+	for i in range(len(allCards)):
+		if allCards[i].rank == 14:
+			allCards = allCards + [allCards[i]] # add ace to lower end
+
+
+	# list of all cards making up straight
+	straightList = [allCards[0]]
+	straightLen = 1 # length of straight
+
+        # start on second card
+	for card in allCards[1:]:
+		# get the val of the previous card. 
+		last_val = ((straightList[-1].rank - 1) % 13)
+		cur_val = (card.rank - 1) % 13
+		# test if this is the next card in the straight
+		if ((cur_val+1) % 13) == (last_val % 13):
+			straightLen += 1
+		# test if this is the same as the last card in the straight
+		elif (cur_val % 13) == (last_val % 13):
+			continue # ignore duplicates
+		else: 
+			if straightLen >= 5:
+				return [straightList,5]
+			# straight ends
+			straightLen = 1
+			straightList = []
+		straightList.append(card)
+
+        if straightLen >= 5:
+		return [straightList,5]
 	return [[],0]
 
 def findStraightFlush(hand,board):
 
-#returns longest straight flush card list#
-	a= findStraight(hand,board)[0]
-	b= findFlush(hand,board)[0]
-	bestStraightFlush = [i for i in a if i in b]
+#returns longest straight flush card list, hand strength tuple
+#returns empty list if no straight flush
 
-	bestStraightFlush = sorted(bestStraightFlush, key=lambda x: -x.rank)
+	bestStraightFlush=[]
+	tempFlush = findFlush(hand, board)[0]
+	if len(tempFlush) > 0:
+		bestStraightFlush = findStraight( tempFlush, [])[0]
 	if len(bestStraightFlush) >4:
 		return [bestStraightFlush,9]
+
 	return [[],0]
 	
 def winningHand(hand1,hand2,board):	
@@ -186,4 +211,17 @@ print ('Hand1: ' + str(hand1))
 print ('Hand2: ' + str(hand2))
 print ('Board: ' + str(board))
 print ('Winning Hand: ' + str(winningHand(hand1,hand2,board)))
+
+
+	
+#handDist = [0]*9
+#for i in range(0,1000000):
+#	deck = Deck()
+#	hand = [deck.drawCard(),deck.drawCard()]
+#	board =[deck.drawCard(),deck.drawCard(),deck.drawCard(),deck.drawCard(),deck.drawCard()]
+#	j = max( [findStraightFlush(hand,board),findFlush(hand,board),findStraight(hand,board),findPairs(hand,board)], key = lambda x: x[1])[1]
+#	handDist[j-1] = handDist[j-1]+1
+#print[handDist]
+
+
 

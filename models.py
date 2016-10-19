@@ -8,10 +8,15 @@ class PokerSession(db.Model):
 
 	id = db.Column(UUIDType(binary=False), primary_key=True)
 	players = db.relationship('Player', backref='poker_session', \
-                                lazy='select')
+                                lazy='joined')
 	current_hand = db.relationship('PokerHand', backref='poker_session', \
-									lazy='select', uselist=False)
+									lazy='joined', uselist=False)
 	small_blind = db.Column(db.Float)
+
+	def __init__(self, small_blind):
+		self.id = uuid.uuid4()
+		self.small_blind = small_blind
+
 	
 
 class Player(db.Model):

@@ -21,11 +21,6 @@ class Card:
 	def __eq__(self, other):
 		return self.rank == other.rank 
 
-class Player:
-	def __init__(self, stackSize):
-		self.hand = [drawCard(),drawCard()]
-		self.stackSize = stackSize
-
 class Deck:
 	def __init__(self):
 		self.cardList = [int(x) for x in range(52)]
@@ -34,7 +29,7 @@ class Deck:
 		index = random.randint(0,len(self.cardList)-1)
 		cardValue = self.cardList[index]
 		del self.cardList[index]
-		return Card(cardValue/4+2,(cardValue % 4)+1)
+		return Card(cardValue//4+2,(cardValue % 4)+1)
 
 def findPairs(hand,board):
 
@@ -159,8 +154,9 @@ def findStraight(hand, board):
 			straightList = []
 		straightList.append(card)
 
-        if straightLen >= 5:
-		return [straightList,5]
+		if straightLen >= 5:
+			return [straightList,5]
+
 	return [[],0]
 
 def findStraightFlush(hand,board):
@@ -201,16 +197,16 @@ def winningHand(hand1,hand2,board):
 				
 # Test #
 
-deck = Deck()	
+# deck = Deck()	
 
-hand1= [deck.drawCard(),deck.drawCard()]
-hand2 = [deck.drawCard(),deck.drawCard()]
-board = [deck.drawCard(),deck.drawCard(),deck.drawCard(),deck.drawCard(),deck.drawCard()]
+# hand1= [deck.drawCard(),deck.drawCard()]
+# hand2 = [deck.drawCard(),deck.drawCard()]
+# board = [deck.drawCard(),deck.drawCard(),deck.drawCard(),deck.drawCard(),deck.drawCard()]
 
-print ('Hand1: ' + str(hand1))
-print ('Hand2: ' + str(hand2))
-print ('Board: ' + str(board))
-print ('Winning Hand: ' + str(winningHand(hand1,hand2,board)))
+# print ('Hand1: ' + str(hand1))
+# print ('Hand2: ' + str(hand2))
+# print ('Board: ' + str(board))
+# print ('Winning Hand: ' + str(winningHand(hand1,hand2,board)))
 
 
 	

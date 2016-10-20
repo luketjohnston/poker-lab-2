@@ -2,8 +2,15 @@ html, body { height: 100%; width: 100%; margin: 0; }
 
 @font-face {
     font-family: GothamRounded;
-    src: url(GothamRoundedBook_21018.ttf);
+    src: url(../fonts/GothamRoundedBook_21018.ttf);
 }
+
+/*salmon: FF724F*/
+/*cream: FEFAE0*/
+/*dark grey: 231F20*/
+/*hazy blue: 7EBDC2*/
+/*burnt orange: BB4430*/
+/*light purple: D4CBE5*/
 
 body {
 	background-color: #FF724F;
@@ -49,10 +56,37 @@ body {
     color: #FEFAE0;
 }
 
-/*blue:7EBDC2*/
-/*burnt orange:BB4430*/
-/*purple: D4CBE5*/
-/*pink: F1DEDE*/
+.banner-message {
+	color: #BB4430;
+	font-size: 10em;
+	text-align: center;
+	margin-top: 10%;
+}
+
+#main-button {
+	margin: 0 auto;
+	padding: 5px 20px;
+	background-color: #BB4430;
+	font-size: 3em;
+	text-align: center;
+	width: 35%;
+	border: 5px solid #231F20;
+	border-radius: 50px;
+	color: #FEFAE0;
+	transition: background-color 0.3s ease
+}
+
+#main-button:hover {
+	cursor: pointer;
+	background-color: #843122;
+}
+
+#invite-box {
+	background-color: #FEFAE0;
+	height: 40%;
+	border-radius: 10px;
+	display: none;
+}
 
 .col-centered {
     float: none;

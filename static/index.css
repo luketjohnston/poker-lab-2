@@ -1,0 +1,280 @@
+html, body { height: 100%; width: 100%; margin: 0; }
+
+@font-face {
+    font-family: GothamRounded;
+    src: url(GothamRoundedBook_21018.ttf);
+}
+
+body {
+	background-color: #FF724F;
+	font-family: GothamRounded;
+}
+
+.vertical-partition {
+	position: absolute;
+	width: 2px;
+	height: 90%;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.flex-row {
+	display: flex; /* or inline-flex */
+  	flex-flow: row nowrap; /* is default: columns along the main-axis (row) and no wrapping to next lines */
+  	align-items: baseline; /* bottom */
+}
+
+.flex-col {
+	display: flex;
+	flex-direction: column;
+}
+
+.header {
+	height: 50px;
+	width: 100%;
+	background-color: #231F20;
+	font-family: GothamRounded;
+	color: #FEFAE0;
+	position: fixed;
+}
+
+.header-title {
+	font-size: 30px;
+	text-transform: uppercase;
+	position:absolute;
+    top:50%;
+    left: 10px;
+    transform: translateY(-50%);
+    color: #FEFAE0;
+}
+
+/*blue:7EBDC2*/
+/*burnt orange:BB4430*/
+/*purple: D4CBE5*/
+/*pink: F1DEDE*/
+
+.col-centered {
+    float: none;
+    margin: 0 auto;
+}
+
+.text-aligned {
+	vertical-align: baseline;
+}
+
+.horiz-centered {
+	vertical-align: inherit;
+}
+
+.vert-centered {
+	transform: translateY(-50%);
+}
+
+.container {
+	height: 100%;
+}
+
+.inner-container {
+	position: relative;
+	margin-top: 10%;
+	height: 70%;
+	background-color: #FEFAE0;
+	-webkit-border-radius: 10px;
+	-moz-border-radius: 10px;
+	border-radius: 10px; 
+
+}
+
+.poker-table {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	background-color: #BB4430;
+	height: 50%;
+	-webkit-border-radius: 150px;
+	-moz-border-radius: 150px;
+	border-radius: 150px; 
+	transform: translate(-50%, -50%);
+}
+
+.card-row {
+	position: absolute;
+	width: 100%;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%,-50%);
+	justify-content: center;
+}
+
+.seat {
+	background-color: #7EBDC2;
+	height: 70px;
+	width: 70px;
+	-webkit-border-radius: 50%;
+	-moz-border-radius: 50%;
+	border-radius: 50%; 
+}
+
+#seat-1 {
+	position: absolute;
+	top:85%;
+	left:-5%;
+}
+
+#seat-2 {
+	position: absolute;
+	top:50%;
+	transform: translateY(-50%);
+	left:-13%;
+}
+
+#seat-3 {
+	position: absolute;
+	bottom:85%;
+	left:-5%;
+}
+
+#seat-4 {
+	position: absolute;
+	top: -33%;
+	left: 17%;
+}
+
+#seat-5 {
+	position: absolute;
+	top: -33%;
+	left: 50%;
+	transform: translateX(-50%);
+}
+
+#seat-6 {
+	position: absolute;
+	top: -33%;
+	right: 17%;
+}
+
+#seat-7 {
+	position: absolute;
+	bottom:85%;
+	right:-5%;
+}
+
+#seat-8 {
+	position: absolute;
+	top:50%;
+	transform: translateY(-50%);
+	right:-13%;
+}
+
+#seat-9 {
+	position: absolute;
+	top:85%;
+	right:-5%;
+}
+
+/*aqua: 17BEBB*/
+/*baby blue: 08B2E3*/
+/* dark purple: 9487AD*/
+
+.player-dash {
+	position: fixed;
+	bottom: 0;
+	left: 50%;
+	height: 30%;
+	transform: translateX(-50%);
+	background-color: #D4CBE5;
+	border-radius: 10px 10px 0 0;
+	padding: 0px;
+}
+
+.dash-title {
+	font-size: 25px;
+	color: #736987;
+	padding: 0 10px;
+	flex-grow: 1;
+}
+
+.dash-stack {
+	font-size: 35px;
+	height: 30px;
+	color: #FEFAE0;
+	transform: translateY(9%);
+	flex-grow: 1;
+}
+
+.button-col {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	height: 60%;
+}
+
+.dash-button {
+	font-size: 20px;
+	color: #FEFAE0;
+	background-color: #9487AD;
+	border: 2px solid #9487AD;
+	border-radius: 20px;
+	text-align: center;
+	margin-top: 5px;
+	margin-bottom: 5px;
+	transition: background-color 0.3s ease;
+}
+
+.dash-button:hover {
+	background-color: #736987;
+}
+
+.card {
+	position: relative;
+	margin: 0 10px;
+	background-color: #FEFAE0;
+	border-radius: 10px;
+	height: 140px;
+	max-width: 98.328px;
+	min-width: 98.328px;
+	flex-grow: 1;
+}
+
+.card-title {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	font-size: 60px;
+}
+
+.top-left-corner {
+	position: absolute;
+	top: 1%;
+	left: 1%;
+}
+
+.bottom-right-corner {
+	position: absolute;
+	-webkit-transform: rotate(180deg);
+    -moz-transform: rotate(180deg);
+    -o-transform: rotate(180deg);
+    -ms-transform: rotate(180deg);
+    transform: rotate(180deg);
+	bottom: 1%;
+	right: 1%;
+}
+
+.spade {
+	color: #231F20;
+}
+
+.heart {
+	color: #B10F2E;
+}
+
+.diamond {
+	color: #B10F2E;
+}
+
+.club {
+	color: #231F20;
+}

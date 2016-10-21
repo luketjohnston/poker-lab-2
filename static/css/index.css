@@ -32,6 +32,12 @@ body {
   	align-items: baseline; /* bottom */
 }
 
+.flex-row-center {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+
 .flex-col {
 	display: flex;
 	flex-direction: column;
@@ -63,29 +69,113 @@ body {
 	margin-top: 10%;
 }
 
-#main-button {
-	margin: 0 auto;
-	padding: 5px 20px;
+.start-button {
 	background-color: #BB4430;
-	font-size: 3em;
 	text-align: center;
-	width: 35%;
-	border: 5px solid #231F20;
+	border: 3px solid #231F20;
+	padding: 5px 10px;
 	border-radius: 50px;
+	font-size: 1.5em;
 	color: #FEFAE0;
+	flex-grow: 1;
 	transition: background-color 0.3s ease
 }
 
-#main-button:hover {
+.start-button:hover {
 	cursor: pointer;
 	background-color: #843122;
 }
 
-#invite-box {
-	background-color: #FEFAE0;
+#main-button {
+	margin: 0 auto;
+	border: 5px solid #231F20;
+	padding: 5px 20px;
+	font-size: 3em;
+	width: 35%;
+}
+
+#admin-input {
 	height: 40%;
-	border-radius: 10px;
 	display: none;
+	align-items: center;
+}
+
+#session-input {
+	height: 40%;
+	min-height: 300px;
+	display: none;
+	align-items: center;
+}
+
+#session-input {
+	height: 40%;
+	display: none;
+}
+
+.input {
+	position: absolute;
+    font: GothamRounded;
+    flex-grow: 1;
+}
+
+.input__label-content {
+	font-size: 1.5em;
+}
+
+.input__field {
+	text-transform: uppercase;
+	color: #FEFAE0;
+}
+
+.num-line {
+	height: 90.5px;
+	width: 100%;
+}
+
+.big-input-label {
+	font-size: 2em;
+	color: #BB4430;
+	flex-grow: 1;
+}
+
+.number-input-field {
+	max-width: 30%;
+    background-color: #FEFAE0;
+    border: 3px solid #BB4430;
+    margin-left: 10px;
+    font-size: 2em;
+    color: #231F20;
+    text-align: right;
+    flex-grow: 1;
+}
+
+.danger-box {
+	box-shadow: inset 0px 0px 10px 1px #F44336
+}
+
+.number-input-field.disabled {
+	background-color: lightgrey;
+}
+
+.next {
+	display: none;
+}
+
+.prev {
+	flex-grow: 1;
+}
+
+#create-session {
+	max-width: 200px;
+	margin-left: 20%;
+}
+
+.nav-icon {
+	flex-grow: 1;
+	height: 50px;
+	width: 50px;
+	max-height: 50px;
+	max-width: 50px;
 }
 
 .col-centered {
@@ -109,9 +199,14 @@ body {
 	height: 100%;
 }
 
+.session-title {
+	margin-top: 50px;
+	text-align: center;
+	font-size: 2.5em;
+}    
+
 .inner-container {
 	position: relative;
-	margin-top: 10%;
 	height: 70%;
 	background-color: #FEFAE0;
 	-webkit-border-radius: 10px;
@@ -148,6 +243,29 @@ body {
 	-webkit-border-radius: 50%;
 	-moz-border-radius: 50%;
 	border-radius: 50%; 
+}
+
+.seat.occupied {
+	border: 3px solid #45686B;
+}
+
+.seat-title {
+	position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    font-size: 3em;
+    color: #45686B;
+}
+
+.seat-title.unoccupied {
+	opacity: 0;
+	transition: opacity 0.2s ease;
+}
+
+.seat-title.unoccupied.admin:hover {
+	cursor: pointer;
+	opacity: 1;
 }
 
 #seat-1 {
@@ -206,10 +324,6 @@ body {
 	top:85%;
 	right:-5%;
 }
-
-/*aqua: 17BEBB*/
-/*baby blue: 08B2E3*/
-/* dark purple: 9487AD*/
 
 .player-dash {
 	position: fixed;

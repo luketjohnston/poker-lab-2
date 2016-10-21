@@ -1,4 +1,4 @@
-getfrom app import db
+from app import db
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy_utils import UUIDType
 import uuid
@@ -8,19 +8,28 @@ class PokerSession(db.Model):
 	__tablename__ = 'poker_sessions'
 
 	id = db.Column(UUIDType(binary =False), default = uuid.uuid4(), primary_key=True)
+	name = db.Column(db.String(20))
 	players = db.relationship('Player', backref='poker_session', \
                                 lazy='joined')
 	current_hand = db.relationship('PokerHand', backref='poker_session', \
 									lazy='joined', uselist=False)
 	small_blind = db.Column(db.Float)
+	big_blind = db.Column(db.Float)
+	max_buy_in = db.Column(db.Float)
+	hand_in_session = db.Column(db.Boolean)
 
-	def __init__(self, small_blind = None, players = None, current_hand = None):
+	def __init__(self, name = '', small_blind = None, players = None, 
+		current_hand = None, big_blind = None, max_buy_in = None):
 		self.id = uuid.uuid4()
 		self.small_blind = small_blind
 		if players:
 			self.players = players
 		if current_hand:
 			self.current_hand = current_hand
+		self.hand_in_session = False
+		self.big_blind = big_blind
+		self.name = name
+		self.max_buy_in = max_buy_in
 
 
 class Player(db.Model):

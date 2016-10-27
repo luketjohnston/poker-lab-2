@@ -1,4 +1,4 @@
-getfrom app import db
+from app import db
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy_utils import UUIDType
 import uuid
@@ -10,17 +10,17 @@ class PokerSession(db.Model):
 	id = db.Column(UUIDType(binary =False), default = uuid.uuid4(), primary_key=True)
 	players = db.relationship('Player', backref='poker_session', \
                                 lazy='joined')
-	current_hand = db.relationship('PokerHand', backref='poker_session', \
-									lazy='joined', uselist=False)
+	poker_hand = db.relationship('PokerHand', backref='poker_session', \
+                                lazy='joined', uselist=False)
 	small_blind = db.Column(db.Float)
 
-	def __init__(self, small_blind = None, players = None, current_hand = None):
+	def __init__(self, small_blind = None, players = None, poker_hand = None):
 		self.id = uuid.uuid4()
 		self.small_blind = small_blind
 		if players:
 			self.players = players
-		if current_hand:
-			self.current_hand = current_hand
+		if poker_hand:
+			self.poker_hand = poker_hand
 
 
 class Player(db.Model):
@@ -54,17 +54,11 @@ class PokerHand(db.Model):
 	__tablename__ = 'poker_hands'
 
 	id = db.Column(db.Integer, primary_key=True)
-	street = db.Column(db.Integer)
-	bet_list_object = db.Column(db.PickleType)
-	hole_cards = db.Column(db.PickleType)
-	board = db.Column(db.PickleType)
+	game_state = db.Column(db.PickleType)
 	poker_session_id = db.Column(UUIDType(binary=False), \
 		db.ForeignKey('poker_sessions.id'))
 
-	def __init__(self, street = None, bet_list_object = None, hole_cards = [None], board = [None]):
-		self.street = street
-		if bet_list_object:
-			self.bet_list_object = bet_list_object
-		self.hole_cards = hole_cards
-		self.board = board
+	def __init__(self, game_state = None):
+		if game_state:
+			self.game_state = game_state
 

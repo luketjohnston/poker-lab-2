@@ -180,8 +180,6 @@ def winningHand(hand1,hand2,board):
 	bestHandValue1 = max( [findStraightFlush(hand1,board),findFlush(hand1,board),findStraight(hand1,board),findPairs(hand1,board)], key = lambda x: x[1])
 	bestHandValue2 = max( [findStraightFlush(hand2,board),findFlush(hand2,board),findStraight(hand2,board),findPairs(hand2,board)], key = lambda x: x[1])
 	
-	
-
 	if(bestHandValue1[1]>bestHandValue2[1]):
 		return bestHandValue1[0][:5]
 	if(bestHandValue2[1]>bestHandValue1[1]):
@@ -194,6 +192,9 @@ def winningHand(hand1,hand2,board):
 		if bestHandValue1[0] > bestHandValue2[0]:
 			return bestHandValue1[0][:5]
 	
+def best_five_card_hand(hand, board):
+	best_hand = max( [findStraightFlush(hand,board),findFlush(hand,board),findStraight(hand,board),findPairs(hand,board)], key = lambda x: x[1])
+	return best_hand[0][:5]
 				
 # Test #
 

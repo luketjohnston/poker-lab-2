@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Poker Lab</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link rel = "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/index.css') }}">
+    <link rel = "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/set1.css') }}">
+    <style>
+      .container {
+        max-width: 1000px;
+      }
+    </style>
+  </head>
+  <body>
+  <div class="header xs-col-12">
+            <a href="/">
+                <div class="header-title"> Poker Lab 
+                <img class="horiz-centered" src="{{ url_for('static', filename = 'img/spades-cream.png') }}" style="height: 23px;">
+                <img class="horiz-centered" src="{{ url_for('static', filename = 'img/flask-outline.png') }}" style="height: 23px">
+                </div>
+            </a>
+        </div>
+    <div class="container">
+        <div class="banner-message">Welcome.</div>
+        <div class="start-button" id="main-button">Start session</div>
+        <form method="POST" action="create-session/">
+            <div class="col-xs-6 col-centered flex-col" id="admin-input">
+                <span class="input input--minoru">
+                    <input class="input__field input__field--yoko" type="text" id="username" name="username">
+                    <label class="input__label input__label--yoko" for="username">
+                            <span class="input__label-content input__label-content--yoko">Username</span>
+                        </label>
+                </span>
+                <span class="input input--minoru">
+                    <input class="input__field input__field--yoko" type="text" id="email" name="email">
+                    <label class="input__label input__label--yoko" for="email">
+                            <span class="input__label-content input__label-content--yoko">Email</span>
+                        </label>
+                </span>
+                <span class="input input--minoru">
+                    <input class="input__field input__field--yoko" type="text" id="session-name" name="session-name">
+                    <label class="input__label input__label--yoko" for="session-name">
+                            <span class="input__label-content input__label-content--yoko">Session Name</span>
+                        </label>
+                </span>
+                <img class="next nav-icon" src="{{ url_for('static', filename = 'img/next.png') }}">
+            </div>
+            <div class="col-xs-4 col-centered flex-col" id="session-input">
+                <div class="flex-row-center num-line">
+                    <div class="big-input-label">Max Buy-in</div>
+                    <input id="max-buy-in" name="max-buy-in" class="number-input-field danger-box" type="text" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                </div>
+                <div class="flex-row-center num-line">
+                    <div class="big-input-label">Your Stack</div>
+                    <input class="number-input-field" type="text" id="player-stack" name="player-stack" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                </div>
+                <div class="flex-row-center num-line">
+                    <div class="big-input-label">Small Blind</div>
+                    <input class="number-input-field" id="small-blind" name="small-blind" type="text" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+                </div>
+                <div class="flex-row-center num-line">
+                    <div class="big-input-label">Big Blind</div>
+                    <input class="number-input-field disabled" id="big-blind" name="big-blind" type="text" disabled>
+                </div>
+                <div class="flex-row-center num-line">
+                    <img class="prev nav-icon" src="{{ url_for('static', filename = 'img/back.png') }}">
+                    <input id="create-session" type="submit" class="start-button" style="display: none" value="Start">
+                </div>
+            </div>
+        </form>
+    </div>
+    <script src="//code.jquery.com/jquery-2.2.1.min.js"></script>
+    <script   src="http://code.jquery.com/ui/1.12.1/jquery-ui.min.js"   integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="   crossorigin="anonymous"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular.min.js"></script>
+    <script src="{{url_for('static', filename= 'js/index.js')}}"></script>
+    <script src="{{url_for('static', filename= 'js/classie.js')}}"></script>
+  </body>
+</html>

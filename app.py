@@ -1,10 +1,11 @@
-from flask import Flask, request, redirect, url_for, jsonify
+from flask import Flask, request, redirect, url_for, jsonify, render_template
 from flask.ext.sqlalchemy import SQLAlchemy
 import os
 app = Flask(__name__)
 app.config.from_object(os.environ['APP_SETTINGS'])
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+app.jinja_env.add_extension('jinja2.ext.loopcontrols')
 
 from models import *
 from hand_evaluator import Card, Deck
@@ -12,25 +13,49 @@ from bet_logic import *
 from copy import deepcopy
 
 
-@app.route('/create-session/')
-def create_session():
-	# db.create_all()
+@app.route('/')
+def index():
+	return render_template('index.html')
 
-	#create admin player
-	new_admin_player = Player(username = 'Aaron', seat_num = 1, has_button = False, stack_size = 20.00, is_admin = True)
+@app.route('/create-session/', methods=['POST'])
+def create_session():
+	print('HERE')
+	print(request.form)
+	print(request.form['username'])
+	print(request.form['email'])
+	print(request.form['session-name'])
+	print(request.form['max-buy-in'])
+	print(request.form['player-stack'])
+	print(request.form['small-blind'])
+	# print(request.form['big-blind'])
+
+	new_admin_player = Player(username = request.form['username'].lower(),
+		seat_num = 5, 
+		has_button = False, 
+		is_admin = True,
+		stack_size = float(request.form['player-stack']))
+
+	#create dummy player for testing purposes
+	dummy_player = Player(username = 'aaron', 
+		seat_num = 9, 
+		has_button = False, 
+		stack_size = float(request.form['player-stack']))
 
 	#create new session
-	new_session = PokerSession(small_blind = 0.1)
+	small_blind = float(request.form['small-blind'])
+	new_session = PokerSession(name=request.form['session-name'].lower(), 
+		small_blind = small_blind, big_blind = 2*small_blind, 
+		max_buy_in = float(request.form['max-buy-in']))
 	#add admin to the session
-	new_session.players = [new_admin_player]
+	new_session.players = [new_admin_player, dummy_player]
 	new_admin_player.poker_session = new_session
 
 
 	db.session.add(new_session)
 	db.session.add(new_admin_player)
+	db.session.add(dummy_player)
 	db.session.commit()
 
-	return str(new_session.id)
 
 @app.route('/<current_session_id>/show-gamestate')
 def show_gamestate(current_session_id):
@@ -42,10 +67,6 @@ def show_gamestate(current_session_id):
 	return 'Player Info: {0}, Next Seat to act: {1}, Street {2}'.format(str(current_game_state.player_list) , current_game_state.player_to_act.seat_num,
 			current_game_state.street) 
 
-@app.route('/<current_session_id>/<player_id>')
-def poker_room(current_session_id, player_id):
-	pass
-
 	
 @app.route('/<current_session_id>/retrieve-gamestate')
 def retrieve_gamestate(current_session_id):
@@ -53,38 +74,48 @@ def retrieve_gamestate(current_session_id):
 	results = get_game_state_dict(current_session_id)
 	return jsonify(results)
 
-@app.route('/<current_session_id>/add-player/')
-def add_player(current_session_id):
+
+@app.route('/<current_session_id>/<player_id>/')
+def poker_room(current_session_id, player_id):
+	results = {}
+
+	#retrieve the current session
+	current_session = PokerSession.query.filter_by(
+		id = current_session_id).first()
+
+	current_player = Player.query.filter_by(
+		id = player_id).first()
+
+	# if hand in session return user's cards and board
+	if current_session.hand_in_session:
+		# TODO: return cards etc
+		pass
+	else:
+		results['board'] = []
+		results['hand'] = []
+
+	current_player.stack_size = int(current_player.stack_size)
+	print(current_session.players)
+	results['player'] = current_player
+	results['session'] = current_session
+
+	return render_template('poker-session.html', results=results)
+
+
+	
+@app.route('/<current_session_id>/<admin_id>/add-player/', methods=['POST'])
+def add_player(current_session_id, admin_id):
+
+	json_data = request.json
 
 	#retrieve the current session
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
 
 	#add a player to the this session
-	new_player = Player(username = 'James', seat_num =6, stack_size = 20.00)
-	new_player1 = Player(username = 'James2', seat_num =3, stack_size = 20.00)
-	new_player2 = Player(username = 'James3', seat_num = 4, stack_size =20.00)
-	new_player3 = Player(username = 'James4', seat_num = 5, stack_size =20.00, has_button = True)
-
-
+	new_player = Player(username = json_data['email'], email = json_data['email'], seat_num = json_data['seat_num'])
 	current_session.players.append(new_player)
-	new_player.poker_session = current_session
-
-	current_session.players.append(new_player1)
-	new_player1.poker_session = current_session
-
-	current_session.players.append(new_player2)
-	new_player2.poker_session = current_session
-
-	current_session.players.append(new_player3)
-	new_player3.poker_session = current_session
-
-	db.session.add(new_player)
-	db.session.add(new_player1)
-	db.session.add(new_player2)
-	db.session.add(new_player3)
 
 	db.session.commit()
-	return str(len(current_session.players))
 
 	
 @app.route('/<current_session_id>/deal-hand/')

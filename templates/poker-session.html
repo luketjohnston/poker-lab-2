@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Poker Lab</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link rel = "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/index.css') }}">
+    <link rel = "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/sweetalert.css') }}">
+    <link rel = "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/swal-forms.css') }}">
+    <style>
+      .container {
+        max-width: 1000px;
+      }
+    </style>
+  </head>
+  <body>
+  <div class="header xs-col-12">
+        <a href="/">
+            <div class="header-title"> Poker Lab 
+            <img class="horiz-centered" src="{{ url_for('static', filename = 'img/spades-cream.png') }}" style="height: 23px;">
+            <img class="horiz-centered" src="{{ url_for('static', filename = 'img/flask-outline.png') }}" style="height: 23px">
+            </div>
+        </a>
+    </div>
+    <div class="container">
+        <div class="session-title" >{{results['session'].name.upper()}} Poker Room</div>
+        <div class="row inner-container">
+            <div class="col-xs-12">
+            </div>
+            <div class="col-xs-8 poker-table">
+                {% for i in range(1, 11) %}
+                    {% set vis_idx = (i - results['player'].seat_num) % 10 %}
+                    {% if vis_idx != 0 %}
+                        {% if results['active_players'][i] %}
+                            <div class="seat occupied {% if results['folded'][i] %}folded {% endif %} {% if results['seat_to_act'] == i %}action-on {% endif %}" id="seat-{{vis_idx}}">
+                                <div class="seat-title" >{{results['usernames'][i][0].upper()}}</div>
+                                <hr class="seat-info-line" id="line-{{vis_idx}}">
+                            </div>
+                        {% else %}
+                            <div class="seat unoccupied" id="seat-{{vis_idx}}">
+                                <div class="seat-title unoccupied {% if results['player'].is_admin %}mutable {% endif %}" {% if results['player'].is_admin %}onclick="addPlayer({{i}})"{% endif %}>+</div>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                <div class="card-row flex-row">
+                    
+                    {% for card in results['board'] %}
+                    {% endfor %}
+                    
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5 col-centered player-dash">
+            <div class="col-lg-6" style="height: 100%">
+                <div class="flex-row">
+                    <img src="{{ url_for('static', filename = 'img/column-chart.png') }}" style="height: 25px; transform: translateY(10%);">
+                    <div class="dash-title">Stack:</div>
+                    <div class="dash-stack">{{results['player'].stack_size}}</div>
+                </div>
+                <div class="flex-row">
+                    {% for card in results['hand'] %}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="vertical-partition" style="background-color: #9487AD"></div>
+            <div class="col-lg-6" style="height: 100%;">
+                <div class="flex-col button-col col-lg-8">
+                    <div class="dash-button">Check</div>
+                    <div class="dash-button">Fold</div>
+                    <div class="dash-button">Bet</div>
+                </div>
+            </div>
+            
+        </div>
+      
+      <br>
+      {% for error in errors %}
+        <h4>{{ error }}</h4>
+      {% endfor %}
+    </div>
+    <script src="//code.jquery.com/jquery-2.2.1.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular.min.js"></script>
+    <script src="{{url_for('static', filename= 'js/sweetalert.min.js')}}"></script>
+    <script src="{{url_for('static', filename= 'js/swal-forms.js')}}"></script>
+    <script src="{{url_for('static', filename= 'js/poker-session.js')}}"></script>
+  </body>
+</html>

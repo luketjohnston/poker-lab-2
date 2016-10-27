@@ -249,12 +249,9 @@ body {
 	border: 3px solid #45686B;
 }
 
-.seat.inactive {
-	-webkit-filter: grayscale(100%);
-    -moz-filter: grayscale(100%);
-    -o-filter: grayscale(100%);
-    -ms-filter: grayscale(100%);
-    filter: grayscale(100%);
+.seat.folded {
+	background-color: #7E8182;
+    border: 3px solid rgba(255, 255, 255, .5);
 }
 
 .seat-title {
@@ -266,12 +263,21 @@ body {
     color: #45686B;
 }
 
+.seat.action-on {
+	box-shadow: 0 0 30px 10px #EF6F6C;
+}
+
+.folded .seat-title {
+	color: #fff;
+    opacity: .5;
+}
+
 .seat-title.unoccupied {
 	opacity: 0;
 	transition: opacity 0.2s ease;
 }
 
-.seat-title.unoccupied.admin:hover {
+.seat-title.unoccupied.mutable:hover {
 	cursor: pointer;
 	opacity: 1;
 }

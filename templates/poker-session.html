@@ -31,18 +31,14 @@
                 {% for i in range(1, 11) %}
                     {% set vis_idx = (i - results['player'].seat_num) % 10 %}
                     {% if vis_idx != 0 %}
-                        {% set vars = {'seat_occupied': False} %}
-                        {% for player in results['session'].players %}
-                            {% if player.seat_num == i %}
-                                <div class="seat occupied" id="seat-{{vis_idx}}">
-                                    <div class="seat-title" >{{player.username[0].upper()}}</div>
-                                </div>
-                                {% if vars.update({'seat_occupied': True}) %}{% endif %}
-                            {% endif %}
-                        {% endfor %}
-                        {% if not vars.seat_occupied %}
+                        {% if results['active_players'][i] %}
+                            <div class="seat occupied {% if results['folded'][i] %}folded {% endif %} {% if results['seat_to_act'] == i %}action-on {% endif %}" id="seat-{{vis_idx}}">
+                                <div class="seat-title" >{{results['usernames'][i][0].upper()}}</div>
+                                <hr class="seat-info-line" id="line-{{vis_idx}}">
+                            </div>
+                        {% else %}
                             <div class="seat unoccupied" id="seat-{{vis_idx}}">
-                                <div class="seat-title unoccupied {% if results['player'].is_admin %}admin{% endif %}" {% if results['player'].is_admin %}onclick="addPlayer({{i}})"{% endif %}>+</div>
+                                <div class="seat-title unoccupied {% if results['player'].is_admin %}mutable {% endif %}" {% if results['player'].is_admin %}onclick="addPlayer({{i}})"{% endif %}>+</div>
                             </div>
                         {% endif %}
                     {% endif %}

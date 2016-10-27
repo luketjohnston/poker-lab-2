@@ -249,6 +249,14 @@ body {
 	border: 3px solid #45686B;
 }
 
+.seat.inactive {
+	-webkit-filter: grayscale(100%);
+    -moz-filter: grayscale(100%);
+    -o-filter: grayscale(100%);
+    -ms-filter: grayscale(100%);
+    filter: grayscale(100%);
+}
+
 .seat-title {
 	position: absolute;
     top: 50%;

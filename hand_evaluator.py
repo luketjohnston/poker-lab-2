@@ -1,8 +1,8 @@
 import random
 import math
 
-rankName = [2,3,4,5,6,7,8,9,10,'J','Q','K','A']
-suitName = ['c','d','h','s']
+rankName = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']
+suitName = ['clubs','diamonds','hearts','spades']
 
 class Card:
 	def __init__(self,rank, suit):
@@ -20,6 +20,10 @@ class Card:
 
 	def __eq__(self, other):
 		return self.rank == other.rank 
+
+	def get_string_tuple(self):
+		
+		return [rankName[self.rank-2], suitName[self.suit -1]]
 
 class Deck:
 	def __init__(self):

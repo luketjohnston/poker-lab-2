@@ -102,10 +102,10 @@ class GameState:
 
 	def can_bet(self, player):
 		#checks to see if player can open the action, i.e. all previous players have checked
-		if self.get_player_to_right(player).current_bet == 0:
-			return True
-		else:
-			return False
+		for player in self.player_list:
+			if player.current_bet != 0:
+				return False
+		return True
 
 
 	def can_raise(self, player):

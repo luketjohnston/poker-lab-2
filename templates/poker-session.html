@@ -14,6 +14,7 @@
     </style>
   </head>
   <body>
+  <div id="seat-number" data="{{results['player'].seat_num}}"></div>
   <div class="header xs-col-12">
         <a href="/">
             <div class="header-title"> Poker Lab 
@@ -31,11 +32,26 @@
                 {% for i in range(1, 11) %}
                     {% set vis_idx = (i - results['player'].seat_num) % 10 %}
                     {% if vis_idx != 0 %}
-                        {% if results['active_players'][i] %}
-                            <div class="seat occupied {% if results['folded'][i] %}folded {% endif %} {% if results['seat_to_act'] == i %}action-on {% endif %}" id="seat-{{vis_idx}}">
+                        {% if results['filled_seats'][i] %}
+                            <div class="seat occupied {% if results['session'].poker_hand and results['folded_players'][i] %}folded {% endif %} {% if results['session'].poker_hand and results['seat_to_act'] == i %}action-on {% endif %}" id="seat-{{vis_idx}}">
                                 <div class="seat-title" >{{results['usernames'][i][0].upper()}}</div>
-                                <hr class="seat-info-line" id="line-{{vis_idx}}">
+                                <div class="player-byline" id="byline-{{vis_idx}}">
+                                    <div>{{results['usernames'][i]}}</div>
+                                    <hr class="seat-info-line" id="line-{{vis_idx}}">
+                                    <div class="seat-stack">{% if results['stacks'][i] < 1000 %}{{'%0.2f' | format(results['stacks'][i]|float)}} {% else %}{{'%0.0f' | format(results['stacks'][i]|float)}} {% endif %}</div>
+                                </div>
+                                {% if results['button_seat'] == i %}
+                                    <div class="dealer-chip">
+                                        <div class="chip-text">D</div>
+                                    </div>
+                                {% endif %}
                             </div>
+                            {% if results['session'].poker_hand and results['current_bets'][i] > 0 %}
+                                <div class="bet-info" id="bet-info-{{vis_idx}}">
+                                    <img src="{{ url_for('static', filename = 'img/bet-icon.png') }}" style="height: 25px;">
+                                    <div class="bet-num">{{results['current_bets'][i]}}</div>
+                                </div>
+                            {% endif %}
                         {% else %}
                             <div class="seat unoccupied" id="seat-{{vis_idx}}">
                                 <div class="seat-title unoccupied {% if results['player'].is_admin %}mutable {% endif %}" {% if results['player'].is_admin %}onclick="addPlayer({{i}})"{% endif %}>+</div>
@@ -44,31 +60,60 @@
                     {% endif %}
                 {% endfor %}
                 <div class="card-row flex-row">
-                    
-                    {% for card in results['board'] %}
-                    {% endfor %}
-                    
+                    {% if results['session'].poker_hand %}
+                        {% for card in results['board'] %}
+                            {% include 'card.html' %}
+                        {% endfor %}
+                    {% elif results['player'].is_admin %}
+                        <div class="start-button" onclick="dealHand()">Deal 'Em, Cowboy!</div>
+                    {% endif %}
                 </div>
             </div>
         </div>
-        <div class="col-lg-5 col-centered player-dash">
-            <div class="col-lg-6" style="height: 100%">
+        <div class="col-xs-5 col-centered player-dash">
+            <div class="col-xs-3 col-centered pot-dash">
+                <div class="dash-title small-text">Pot:</div>
+                {% if results['session'].poker_hand %}
+                    <div class="dash-pot">{{results['total_pot']}}</div>
+                {% else %}
+                    <div class="dash-pot">--</div>
+                {% endif %}
+            </div>
+            <div class="col-xs-6" style="height: 100%">
                 <div class="flex-row">
                     <img src="{{ url_for('static', filename = 'img/column-chart.png') }}" style="height: 25px; transform: translateY(10%);">
                     <div class="dash-title">Stack:</div>
                     <div class="dash-stack">{{results['player'].stack_size}}</div>
                 </div>
                 <div class="flex-row">
-                    {% for card in results['hand'] %}
-                    {% endfor %}
+                    {% if results['session'].poker_hand %}
+                        {% for card in results['hole_cards'] %}
+                            {% include 'card.html' %}
+                        {% endfor %}
+                    {% endif %}
                 </div>
             </div>
             <div class="vertical-partition" style="background-color: #9487AD"></div>
             <div class="col-lg-6" style="height: 100%;">
                 <div class="flex-col button-col col-lg-8">
-                    <div class="dash-button">Check</div>
-                    <div class="dash-button">Fold</div>
-                    <div class="dash-button">Bet</div>
+                {% if results['session'].poker_hand %}
+                    {% if results['can_bet'][results['player'].seat_num] %}
+                        <div class="dash-button" onclick="check()">Check</div>
+                        <div class="dash-button" onclick="bet()">Bet</div>
+                    {% else %}
+                        {% if results['can_call'][results['player'].seat_num] %}
+                            <div class="dash-button" onclick="call()">Call</div>
+                            {% if results['can_raise'][results['player'].seat_num] %}
+                                <div class="dash-button" onclick="raise()">Raise</div>
+                            {% else %}
+                                <div class="dash-button" onclick="allIn()">All In</div>
+                            {% endif %}   
+                        {% else %}
+                            <div class="dash-button" onclick="allIn()">All In</div>
+                        {% endif %}
+                    {% endif %}
+                    <div class="dash-button" onclick="fold()">Fold</div>
+                {% endif %}
                 </div>
             </div>
             

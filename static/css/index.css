@@ -81,6 +81,11 @@ body {
 	transition: background-color 0.3s ease
 }
 
+.poker-table .start-button {
+	max-width: 50%;
+	padding: 10px 10px;
+}
+
 .start-button:hover {
 	cursor: pointer;
 	background-color: #843122;
@@ -339,6 +344,181 @@ body {
 	right:-5%;
 }
 
+.dealer-chip {
+	position: absolute;
+    top: 65%;
+    right: -5%;
+	height: 30px;
+    width: 30px;
+    background-color: #FEFAE0;
+    border-radius: 30px;
+    border: 2px solid #333;
+}
+
+.chip-text {
+	position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-45%,-45%);
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.bet-num {
+	color: #FEFAE0;
+}
+
+#bet-info-1 {
+	position: absolute;
+    top: 75%;
+    left: 9%;
+}
+
+#bet-info-2 {
+	position: absolute;
+    top: 50%;
+    left: 1%;
+    transform: translateY(-50%);
+}
+
+#bet-info-3 {
+	position: absolute;
+    top: 13%;
+    left: 6%;
+}
+
+#bet-info-4 {
+	position: absolute;
+    top: 2%;
+    left: 20%;
+}
+
+#bet-info-5 {
+	position: absolute;
+    top: 2%;
+    left: 50%;
+	transform: translateX(-50%);
+}
+
+#bet-info-6 {
+	position: absolute;
+    top: 2%;
+    right: 20%;
+}
+
+#bet-info-7 {
+	position: absolute;
+    top: 13%;
+    right: 6%;
+} 
+
+#bet-info-8 {
+	position: absolute;
+    top: 50%;
+    right: 1%;
+    transform: translateY(-50%);
+}
+
+#bet-info-9 {
+	position: absolute;
+    top: 75%;
+    right: 9%;
+}
+
+
+.player-byline {
+	width: 100px;
+}
+
+.seat-info-line {
+	margin-top: 0;
+    margin-bottom: 0;
+    border-top: 2px solid #333;
+}
+
+.seat-stack {
+	font-weight: bold;
+    font-size: 1.5em;
+}
+
+#byline-1 {
+	position: absolute;
+	top: -50%;
+	left: -120%;
+}
+
+#byline-2 {
+	position: absolute;
+	top: -50%;
+	left: -120%;
+}
+
+#byline-3 {
+	position: absolute;
+	top: -50%;
+	left: -120%;
+}
+
+#byline-4 {
+	position: absolute;
+	top: -50%;
+	left: -120%;
+}
+
+#byline-5 {
+	position: absolute;
+	top: -50%;
+	left: -120%;
+}
+
+#byline-6 {
+	position: absolute;
+	top: -50%;
+	left: 70%;
+	text-align: right;
+}
+
+#byline-7 {
+	position: absolute;
+	top: -50%;
+	left: 70%;
+	text-align: right;
+}
+
+#byline-8 {
+	position: absolute;
+	top: -50%;
+	left: 70%;
+	text-align: right;
+}
+
+#byline-9 {
+	position: absolute;
+	top: -50%;
+	left: 70%;
+	text-align: right;
+}
+
+.pot-dash {
+	position: absolute;
+	top: 0%;
+	left: 50%;
+	height: 30%;
+	transform: translate(-50%, -100%);
+	border-radius: 10px 10px 0 0;
+	background-color: #D4CBE5;
+	border-top: 3px solid #736987;
+	border-left: 3px solid #736987;
+	border-right: 3px solid #736987;
+
+	text-align: center;
+}
+
+.dash-pot {
+	font-size: 1.8em;
+	color: #736987;
+}
+
 .player-dash {
 	position: fixed;
 	bottom: 0;
@@ -355,6 +535,10 @@ body {
 	color: #736987;
 	padding: 0 10px;
 	flex-grow: 1;
+}
+
+.small-text {
+	font-size: 1.2em;
 }
 
 .dash-stack {
@@ -400,6 +584,21 @@ body {
 	flex-grow: 1;
 }
 
+.suit-icon {
+	height: 25px;
+}
+
+.poker-table .card {
+	margin: 0 5px;
+	height: 100px;
+    max-width: 71.4px;
+    min-width: 71.4px;
+}
+
+.poker-table .suit-icon {
+	height: 17.5px;
+}
+
 .card-title {
 	position: absolute;
 	top: 50%;
@@ -425,18 +624,18 @@ body {
 	right: 1%;
 }
 
-.spade {
+.spades {
 	color: #231F20;
 }
 
-.heart {
+.hearts {
 	color: #B10F2E;
 }
 
-.diamond {
+.diamonds {
 	color: #B10F2E;
 }
 
-.club {
+.clubs {
 	color: #231F20;
 }

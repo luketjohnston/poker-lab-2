@@ -1,11 +1,11 @@
-<div class="card spade">
+<div class="card {{card[1]}}">
 	<div class="top-left-corner">
-		<img src="{{ url_for('static', filename = 'img/spades-black.png') }}" style="height: 25px;">
+		<img class="suit-icon" src="{{ url_for('static', filename = 'img/{}.png'.format(card[1])) }}">
 	</div>
 	<div class="bottom-right-corner">
-		<img src="{{ url_for('static', filename = 'img/spades-black.png') }}" style="height: 25px;">
+		<img class="suit-icon" src="{{ url_for('static', filename = 'img/{}.png'.format(card[1])) }}">
 	</div>
 	<div class="card-title">
-		J
+		{{card[0]}}
 	</div>
 </div>

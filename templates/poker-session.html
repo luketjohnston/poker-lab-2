@@ -70,7 +70,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xs-5 col-centered player-dash">
+        <div class="col-xs-5 col-centered player-dash {% if results['seat_to_act'] == results['player'].seat_num %}action-on {% endif %}">
             <div class="col-xs-3 col-centered pot-dash">
                 <div class="dash-title small-text">Pot:</div>
                 {% if results['session'].poker_hand %}
@@ -80,12 +80,12 @@
                 {% endif %}
             </div>
             <div class="col-xs-6" style="height: 100%">
-                <div class="flex-row">
+                <div class="flex-row baseline">
                     <img src="{{ url_for('static', filename = 'img/column-chart.png') }}" style="height: 25px; transform: translateY(10%);">
                     <div class="dash-title">Stack:</div>
                     <div class="dash-stack">{{results['player'].stack_size}}</div>
                 </div>
-                <div class="flex-row">
+                <div class="flex-row" id="hole-cards-row">
                     {% if results['session'].poker_hand %}
                         {% for card in results['hole_cards'] %}
                             {% include 'card.html' %}
@@ -98,21 +98,27 @@
                 <div class="flex-col button-col col-lg-8">
                 {% if results['session'].poker_hand %}
                     {% if results['can_bet'][results['player'].seat_num] %}
-                        <div class="dash-button" onclick="check()">Check</div>
-                        <div class="dash-button" onclick="bet()">Bet</div>
+                        <div class="dash-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="check-button" onclick="check()">Check</div>
+                        <div id="bet-button-container" class="dash-button button-input-container {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}">
+                            <input id='bet-input' class="button-text-input {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" onkeypress="isValidNumber(event.charCode)" {% if results['seat_to_act'] != results['player'].seat_num %}disabled{% endif %}>
+                            <div class="inner-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="bet-button" onclick="bet()">Bet</div>
+                        </div>
                     {% else %}
                         {% if results['can_call'][results['player'].seat_num] %}
-                            <div class="dash-button" onclick="call()">Call</div>
+                            <div class="dash-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="call-button" onclick="call()">Call</div>
                             {% if results['can_raise'][results['player'].seat_num] %}
-                                <div class="dash-button" onclick="raise()">Raise</div>
+                                <div id="raise-button-container" class="dash-button button-input-container {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}">
+                                    <input id="raise-input" class="button-text-input {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" onkeypress="isValidNumber(event.charCode)" {% if results['seat_to_act'] != results['player'].seat_num %}disabled{% endif %}>
+                                    <div class="inner-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="raise-button" onclick="raise()">Raise</div>
+                                </div>
                             {% else %}
-                                <div class="dash-button" onclick="allIn()">All In</div>
+                                <div class="dash-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="all-in-button" onclick="allIn()">All In</div>
                             {% endif %}   
                         {% else %}
-                            <div class="dash-button" onclick="allIn()">All In</div>
+                            <div class="dash-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="all-in-button" onclick="allIn()">All In</div>
                         {% endif %}
                     {% endif %}
-                    <div class="dash-button" onclick="fold()">Fold</div>
+                    <div class="dash-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="fold-button" onclick="fold()">Fold</div>
                 {% endif %}
                 </div>
             </div>

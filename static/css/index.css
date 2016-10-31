@@ -29,7 +29,10 @@ body {
 .flex-row {
 	display: flex; /* or inline-flex */
   	flex-flow: row nowrap; /* is default: columns along the main-axis (row) and no wrapping to next lines */
-  	align-items: baseline; /* bottom */
+}
+
+.flex-row.baseline {
+	align-items: baseline;
 }
 
 .flex-row-center {
@@ -503,7 +506,6 @@ body {
 	position: absolute;
 	top: 0%;
 	left: 50%;
-	height: 30%;
 	transform: translate(-50%, -100%);
 	border-radius: 10px 10px 0 0;
 	background-color: #D4CBE5;
@@ -528,6 +530,10 @@ body {
 	background-color: #D4CBE5;
 	border-radius: 10px 10px 0 0;
 	padding: 0px;
+}
+
+.player-dash.action-on {
+	box-shadow: 0 0 30px 10px #EF6F6C;
 }
 
 .dash-title {
@@ -566,11 +572,54 @@ body {
 	text-align: center;
 	margin-top: 5px;
 	margin-bottom: 5px;
+	flex: 1;
+	max-height: 32px;
 	transition: background-color 0.3s ease;
 }
 
 .dash-button:hover {
 	background-color: #736987;
+}
+
+.dash-button.disabled {
+	background-color: #ADB1B2;
+	border: 2px solid #ADB1B2;
+}
+
+
+.button-input-container {
+	position: relative;
+	border: 2px solid #9487AD;
+	overflow: hidden;
+	border-radius: 20px;
+	min-height: 32px;
+}
+
+.inner-button {
+	font-size: 20px;
+	color: #FEFAE0;
+	background-color: none;
+	padding: 2px;
+	border-radius: 20px;
+	text-align: center;
+	margin: 0;
+}
+
+.button-text-input {
+	float: left;
+	width: 70px;
+	background-color: #FEFAE0;
+	color: #333;
+	border: 0px;
+	text-align: right;
+}
+
+.button-text-input.disabled {
+	background-color: lightgrey;
+}
+
+.button-text-input:focus {
+	outline-width: 0;
 }
 
 .card {
@@ -581,7 +630,7 @@ body {
 	height: 140px;
 	max-width: 98.328px;
 	min-width: 98.328px;
-	flex-grow: 1;
+	flex: 1;
 }
 
 .suit-icon {

@@ -3,10 +3,7 @@ window.setInterval(function(){
 }, 5000);
 
 function retrieveGamestate() {
-	var pathname = window.location.pathname;
-	var pathParts = pathname.split( '/' );
-	var sessionID = pathParts[1];
-	var target = "/" + sessionID + "/retrieve-gamestate/";
+	var target = "retrieve-gamestate/";
 	$.ajax({
 		url: target,
 		type: "GET",
@@ -14,6 +11,10 @@ function retrieveGamestate() {
             updateDisplay(data);
         }
 	});
+}
+
+function isValidNumber(char) {
+	return char >= 48 && char <= 57;
 }
 
 function mod(n, m) {
@@ -82,7 +83,6 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 						// if this seat is the button and doesn't
 						// have chip, add it
 						if(seat.has(".dealer-chip").length === 0) {
-							console.log('does not have chip')
 							$('<div/>', {
 								class: 'dealer-chip'
 							}).appendTo(seat);
@@ -157,8 +157,8 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 					// if this player doesn't have a bet, check
 					// if this seat has a bet on the table and
 					// remove it
-					if(seat.has(".bet-info") !== 0) {
-						seat.find(".bet-info").remove();
+					if(pokerTable.has("#bet-info-" + visIdx).length !== 0) {
+						pokerTable.find("#bet-info-" + visIdx).remove();
 					}
 				}
 			} else {
@@ -170,18 +170,235 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 	}
 }
 
-function updateDisplay(results) {
-	// Get the seat number of the player running this instance
-	var playerSeatNum = $( "#seat-number" ).attr("data")
-	var pokerTable = $( ".poker-table" );
-	updateSeatInfo(results, playerSeatNum, pokerTable);
-
-	var boardCards = pokerTable.find('.card');
-	for(i=boardCards.length; i < results.board.length; i++) {
-		
-	}
+function createCardDiv(cardObj) {
+	var imgLocation = '/static/img/' + cardObj[1] + '.png';
+	var classes = 'card ' + cardObj[1];
+	var suitImg = $('<img/>', {
+		class: 'suit-icon',
+		src: imgLocation
+	});
+	var suitImg2 = $('<img/>', {
+		class: 'suit-icon',
+		src: imgLocation
+	});
+	var topLeft = $('<div/>', {
+		class: 'top-left-corner'
+	});
+	var bottomRight = $('<div/>', {
+		class: 'bottom-right-corner'
+	});
+	suitImg.appendTo(topLeft);
+	suitImg2.appendTo(bottomRight);
+	var cardTitle = $('<div/>', {
+		class: 'card-title',
+		text: cardObj[0]
+	});
+	var card = $('<div/>', {
+		class: classes
+	});
+	topLeft.appendTo(card);
+	bottomRight.appendTo(card);
+	cardTitle.appendTo(card);
+	return card;
 }
 
+
+function updateDisplay(results) {
+	// Get the seat number of the player running this instance
+	var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
+	var pokerTable = $( ".poker-table" );
+	// Update info regarding seat occupation, player stacks,
+	// and bets
+	updateSeatInfo(results, playerSeatNum, pokerTable);
+
+	// Update the board cards
+	var boardCards = pokerTable.find('.card');
+	for(var i=boardCards.length; i < results.board.length; i++) {
+		var card = createCardDiv(results.board[i]);
+		card.appendTo(pokerTable.find('.card-row'));
+	}
+	// Update this player's hole cards
+	var holeCardsRow = $( "#hole-cards-row" );
+	var holeCards = holeCardsRow.find('.card');
+	for(var i=holeCards.length; i < results.hole_cards.length; i++) {
+		var card = createCardDiv(results.hole_cards[i]);
+		card.appendTo(holeCardsRow);
+	}
+	// Update this player's dash information
+	var stackString = results['stacks'][playerSeatNum];
+	if(stackString >= 1000){
+		stackString = stackString.toFixed(0);
+	} else {
+		stackString = stackString.toFixed(2);
+	}
+	$( '.dash-stack' ).text(stackString);
+	// Update pot
+	if(results.hasOwnProperty('total_pot')) {
+		$( '.dash-pot' ).text(results.total_pot);
+	} else {
+		$( '.dash-pot' ).text('--');
+	}
+	// Update action buttons
+	var buttonColumn = $( '.button-col' );
+	// This check is used to determine if there is
+	// actually a hand in progress, if so, we can
+	// access the dictionaries we need in results
+
+	if(results.hasOwnProperty('can_bet')) {
+		
+		// Check if this player can bet
+		if(results.can_bet[playerSeatNum]) {
+			// If can bet, then remove the raise,
+			// call, and all-in button if they're there
+			if($('#call-button').length !== 0) {
+				$('#call-button').remove();
+			}
+			if($('#raise-button-container').length !== 0) {
+				$('#raise-button-container').remove();
+			}
+			if($('#all-in-button').length !== 0) {
+				$('#all-in-button').remove();
+			}
+
+			// If player can bet, it can check
+			if($('#check-button').length === 0) {
+				$('<div/>', {
+					class: 'dash-button',
+					id: 'check-button',
+					onclick: 'check()',
+					text: 'Check'
+				}).appendTo(buttonColumn);
+			}
+			// If there's no bet button, add one
+			if($( '#bet-button' ).length === 0) {
+				var input = $('<input/>', {
+					class: 'button-text-input',
+					id: 'bet-input',
+					onkeypress: 'isValidNumber(event.charCode)'
+				});
+				var betButton = $('<div/>', {
+					class: 'inner-button',
+					id: 'bet-button',
+					onclick: 'bet()',
+					text: 'Bet'
+				});
+				var buttonContainer = $('<div/>', {
+					class: 'dash-button button-input-container',
+					id: 'bet-button-container'
+				});
+				input.appendTo(buttonContainer);
+				betButton.appendTo(buttonContainer);
+				buttonContainer.appendTo(buttonColumn);
+			}
+		} else {
+			// If player cannot bet
+			// remove bet button and check button
+			// if they are there
+			if($('#check-button').length !== 0) {
+				$('#check-button').remove();
+			}
+			if($('#bet-button-container').length !== 0) {
+				$('#bet-button-container').remove();
+			}
+
+			// Check if player can call
+			if(results.can_call[playerSeatNum]) {
+				if($( '#call-button' ).length === 0) {
+					$('<div/>', {
+						class: 'dash-button',
+						id: 'call-button',
+						onclick: 'call()',
+						text: 'Call'
+					}).appendTo(buttonColumn);
+				}
+				// The player can only possibly raise if he/she
+				// also can call
+				if(results.can_raise[playerSeatNum]) {
+					// If player can raise, check if the all-in
+					// button is there, remove it if so
+					if($( '#all-in-button' ).length !== 0) {
+						$( '#all-in-button' ).remove();
+					}
+					// If there's no raise button, add one
+					if($( '#raise-button' ).length === 0) {
+						var input = $('<input/>', {
+							class: 'button-text-input',
+							id: 'raise-input',
+							onkeypress: 'isValidNumber(event.charCode)'
+						});
+						var raiseButton = $('<div/>', {
+							class: 'inner-button',
+							id: 'raise-button',
+							onclick: 'raise()',
+							text: 'Raise'
+						});
+						var buttonContainer = $('<div/>', {
+							class: 'dash-button button-input-container',
+							id: 'raise-button-container'
+						});
+						input.appendTo(buttonContainer);
+						raiseButton.appendTo(buttonContainer);
+						buttonContainer.appendTo(buttonColumn);
+					}
+				} else {
+					// If player can't raise, and raise button
+					// is present, remove it
+					if($( '#raise-button' ).length !== 0) {
+						$( '#raise-button' ).remove();
+					}
+					// If player can't raise but can call,
+					// the player can go all in
+					if($( '#all-in-button' ).length === 0) {
+						$('<div/>', {
+							class: 'dash-button',
+							id: 'all-in-button',
+							onclick: 'allIn()'
+
+						}).appendTo(buttonColumn);
+					}
+				}
+
+			} else {
+				// If player cannot call
+				// remove the call button if it's there
+				if($( '#call-button' ).length !== 0) {
+					$( '#call-button' ).remove();
+				}
+			}
+		}
+		// The player can always fold during hand
+		$( '#fold-button' ).remove();
+		$('<div/>', {
+			class: 'dash-button',
+			id: 'fold-button',
+			onclick: 'fold()',
+			text: 'Fold'
+		}).appendTo(buttonColumn);
+
+		// if action is on this player, remove
+		// the disabled class from the action buttons
+		// otherwise add it
+		if(results.seat_to_act === playerSeatNum) {
+			$( '.dash-button' ).removeClass('disabled');
+			$( '.inner-button' ).removeClass('disabled');
+			$( '.button-text-input' ).removeClass('disabled');
+			$( '.button-text-input' ).prop('disabled', false);
+			$( '.player-dash' ).addClass('action-on');
+		} else {
+			$( '.dash-button' ).addClass('disabled');
+			$( '.inner-button' ).addClass('disabled');
+			$( '.button-text-input' ).addClass('disabled');
+			$( '.button-text-input' ).prop('disabled', true);
+			$( '.player-dash' ).removeClass('action-on');
+		}
+	} else {
+		// if hand is not in session, remove
+		// all action buttons
+		if($('.dash-button')) {
+			$('.dash-button').remove();
+		}
+	}
+}
 
 
 function dealHand() {
@@ -189,19 +406,60 @@ function dealHand() {
 	var pathParts = pathname.split( '/' );
 	var sessionID = pathParts[1];
 	var target = "/" + sessionID + "/deal-hand/";
-	console.log(target);
-	console.log(pathname);
 	$.ajax({
 		url: target,
 		type: "POST"
 	});
+	$( '.start-button' ).hide();
 }
+
+
+function check() {
+	console.log(check);
+}
+
+
+function bet() {
+	var betAmount = parseFloat($( '#bet-input' ).val());
+	var stackAmount = parseFloat($( '.dash-stack' ).text());
+	console.log('Bet: ' + betAmount);
+	console.log('Stack: ' + stackAmount);
+	if(betAmount <= stackAmount) {
+		console.log('Good bet: ' + betAmount);
+		var betUrl = betAmount + '/bet/';
+		$.ajax({
+			url: betUrl,
+			type: "POST"
+		});
+	} else {
+		console.log('Bad bet: ' + betAmount);
+	}
+}
+
 
 function call() {
 	$.ajax({
 		url: "call/",
 		type: "POST"
 	});
+}
+
+
+function raise() {
+	var raiseAmount = parseFloat($( '#raise-input' ).val());
+	var stackAmount = parseFloat($( '.dash-stack' ).text());
+	console.log('Raise: ' + raiseAmount);
+	console.log('Stack: ' + stackAmount);
+	if(raiseAmount <= stackAmount) {
+		console.log('Good raise: ' + raiseAmount);
+		var betUrl = raiseAmount + '/raise/';
+		// $.ajax({
+		// 	url: betUrl,
+		// 	type: "POST"
+		// });
+	} else {
+		console.log('Bad bet: ' + betAmount);
+	}
 }
 
 function fold() {

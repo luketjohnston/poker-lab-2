@@ -81,7 +81,7 @@ def game_and_session_info(current_session):
 			results['board'] = []
 			
 	else:
-		results = {}
+		results = {'board': []}
 
 	results['filled_seats'] = {i : False for i in range(1,11)}
 	results['usernames'] = {}
@@ -94,12 +94,20 @@ def game_and_session_info(current_session):
 	return results
 
 	
-@app.route('/<current_session_id>/retrieve-gamestate/', methods=['GET'])
-def retrieve_gamestate(current_session_id):
+@app.route('/<current_session_id>/<player_id>/retrieve-gamestate/', methods=['GET'])
+def retrieve_gamestate(current_session_id, player_id):
 	#retrieve the current session
 	current_session = PokerSession.query.filter_by(
 		id = current_session_id).first()
+	current_player = Player.query.filter_by(
+		id = player_id).first()
 	results = game_and_session_info(current_session)
+	if current_session.poker_hand:
+		game_state = current_session.poker_hand.game_state
+		results['hole_cards'] = [card.get_string_tuple() for card in \
+			game_state.get_player_at_seat(current_player.seat_num).hole_cards]
+	else:
+		results['hole_cards'] = []
 	return jsonify(results)
 
 

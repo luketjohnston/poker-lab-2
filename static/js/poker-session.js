@@ -1,6 +1,6 @@
 window.setInterval(function(){
   retrieveGamestate();
-}, 5000);
+}, 1000);
 
 function retrieveGamestate() {
 	var target = "retrieve-gamestate/";

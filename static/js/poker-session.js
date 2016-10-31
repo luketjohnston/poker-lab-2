@@ -453,13 +453,15 @@ function bet() {
 	var stackAmount = parseFloat($( '.dash-stack' ).text());
 	console.log('Bet: ' + betAmount);
 	console.log('Stack: ' + stackAmount);
-	if(betAmount <= stackAmount) {
+	if(betAmount < stackAmount) {
 		console.log('Good bet: ' + betAmount);
 		var betUrl = betAmount + '/bet/';
 		$.ajax({
 			url: betUrl,
 			type: "POST"
 		});
+	} else if(betAmount === stackAmount) {
+		allIn();
 	} else {
 		console.log('Bad bet: ' + betAmount);
 	}
@@ -479,19 +481,22 @@ function raise() {
 	var stackAmount = parseFloat($( '.dash-stack' ).text());
 	console.log('Raise: ' + raiseAmount);
 	console.log('Stack: ' + stackAmount);
-	if(raiseAmount <= stackAmount) {
+	if(raiseAmount < stackAmount) {
 		console.log('Good raise: ' + raiseAmount);
 		var betUrl = raiseAmount + '/raise/';
 		$.ajax({
 			url: betUrl,
 			type: "POST"
 		});
+	} else if(raiseAmount === stackAmount) {
+		allIn();
 	} else {
-		console.log('Bad raise: ' + betAmount);
+		console.log('Bad raise: ' + raiseAmount);
 	}
 }
 
 function allIn() {
+	console.log('All in');
 	$.ajax({
 		url: "all-in/",
 		type: "POST"

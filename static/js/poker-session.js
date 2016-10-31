@@ -117,6 +117,16 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 						} 
 					}
 				}
+				// If player is folded, or is
+				// in the poker room but not playing this hand
+				// then add the folded class
+				if(results.folded_players[i] || 
+					!results.currently_playing_seats[i]) {
+					seat.addClass("folded");
+				} else {
+					// else remove folded class
+					seat.removeClass("folded");
+				}
 			}
 			// update bets
 			// first check if there are any bets
@@ -244,7 +254,7 @@ function updateDisplay(results) {
 	// actually a hand in progress, if so, we can
 	// access the dictionaries we need in results
 
-	if(results.hasOwnProperty('can_bet')) {
+	if(results.currently_playing_seats[playerSeatNum]) {
 		
 		// Check if this player can bet
 		if(results.can_bet[playerSeatNum]) {

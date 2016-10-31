@@ -1,6 +1,10 @@
 window.setInterval(function(){
   retrieveGamestate();
+<<<<<<< HEAD
 }, 100);
+=======
+}, 5000);
+>>>>>>> 7b2349fb098ad1f9971cace3e2dc45b4b41a3211
 
 function retrieveGamestate() {
 	var target = "retrieve-gamestate/";

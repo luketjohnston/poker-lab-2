@@ -59,10 +59,23 @@ class GameState:
 		button_player = self.get_player_at_seat(self.button_position)
 		if player not in live_players:
 			live_players.append(player)
-			live_players = sorted(self.live_players, key = lambda x: x.seat_num)
-			live_players = sorted(self.live_players, key = lambda x: (self.player_list.index(x)-self.player_list.index(button_player)) % self.player_list)
+			live_players = sorted(live_players, key = lambda x: x.seat_num)
+			live_players = sorted(live_players, key = lambda x: (self.player_list.index(x)-self.player_list.index(button_player)) % len(self.player_list))
 		index = live_players.index(player)
 		player_to_left = live_players[(index + 1) % len(live_players)]
+
+		return player_to_left
+
+	def get_unfolded_player_to_left(self,player):
+		#returns next unfolded player to left of input player
+		unfolded_players = self.get_unfolded_players()
+		button_player = self.get_player_at_seat(self.button_position)
+		if player not in unfolded_players:
+			unfolded_players.append(player)
+			unfolded_players = sorted(unfolded_players, key = lambda x: x.seat_num)
+			unfolded_players = sorted(unfolded_players, key = lambda x: (self.player_list.index(x)-self.player_list.index(button_player)) % len(self.player_list))
+		index = unfolded_players.index(player)
+		player_to_left = unfolded_players[(index + 1) % len(unfolded_players)]
 
 		return player_to_left
 
@@ -86,8 +99,13 @@ class GameState:
 		if len([x for x in live_players if x.current_bet == 0]) == len(live_players):
 			if live_players[0].seat_num ==  self.button_position and self.player_to_act == live_players[0]:
 				return True
-			if self.player_to_act == live_players[-1]:
+			if live_players[0].seat_num ==  self.button_position and self.player_to_act != live_players[0]:
+				return False
+
+			if live_players[0].seat_num != self.button_position and self.player_to_act == live_players[-1]:
 				return True
+			if live_players[0].seat_num != self.button_position and self.player_to_act != live_players[-1]:
+				return False
 
 		for x in live_players:
 			if x.current_bet != live_players[0].current_bet:
@@ -103,7 +121,7 @@ class GameState:
 			return (self.last_valid_raiser.current_bet)*2 - player.current_bet + (largest_current_bet - self.last_valid_raiser.current_bet)
 		else:
 			return 0
-			
+
 	def post_blinds(self):
 		#update the total_bet of the small/big blind. 
 		#use this at start of hand to post blinds
@@ -177,8 +195,8 @@ class GameState:
 		unfolded_players_copy = sorted(unfolded_players_copy, key= lambda x: x.total_bet)
 
 		#if everyone else folded, give pot to last unfolded player
-		if len(self.unfolded_players) == 1:
-			return [self.get_max_side_pot(self.unfolded_players[0], self.player_list), [self.unfolded_players[0]]]
+		if len(self.get_unfolded_players()) == 1:
+			return [self.get_max_side_pot(self.get_unfolded_players()[0], self.player_list), [self.get_unfolded_players()[0]]]
 		
 		#if the hand made it showdown, divide pot into side pots
 		side_pot_info_list = []
@@ -225,10 +243,10 @@ class GameState:
 
 		for pot_info in side_pot_info_list:
 			#find the list of winners for a given side pot in side_pot_info_list
-			winners = evaluate_hands(pot_info[1])
+			winners = self.evaluate_hands(pot_info[1])
 			for winner in winners:
 				#for each winner of the side pot, assign to them the appropriate amount of money
-				player_winnings.append(winner, pot_info[0]/len(winners), pot_info[0])
+				player_winnings.append([winner, pot_info[0]/len(winners), pot_info[0]])
 			
 		return player_winnings
 
@@ -236,32 +254,34 @@ class GameState:
 
 		side_pot_info_list = self.get_side_pot_info()
 		players_in_pots = [x[1] for x in side_pot_info_list]
+		button_player = self.get_player_at_seat(self.button_position)
+		left_of_button = self.get_player_to_left(button_player)
 
-		if last_valid_raiser:
-			raise_seat_num = self.last_valid_raiser.seat_num
+		if self.last_valid_raiser and (self.last_valid_raiser in self.get_unfolded_players()):
 			for players in players_in_pots:
-				players = sorted(players, lambda x: x.seat_num)
-				players = sorted(players, lambda x: (index(x) - index(raise_seat_num) +1) % len(players))
+				players = sorted(players, key= lambda x: x.seat_num)
+				players = sorted(players, key = lambda x: (self.player_list.index(x) - self.players_list.index(self.last_valid_raiser) +1) % len(self.player_list))
 				players[0].is_showing = True
 				for player1 in players:
-					players_to_compare = players[0:index(player1)]
+					players_to_compare = players[0:players.index(player1)]
 					for player2 in players:
 						if player.is_showing:
 							players_to_compare.append(player2)
-					if player1 in evaluate_hands(players_to_compare):
+					if player1 in self.evaluate_hands(players_to_compare):
 						player1.is_showing = True
 
 		else:
 			for players in players_in_pots:
-				players = sorted(players, lambda x: x.seat_num)
-				players = sorted(players, lambda x: (index(x) - index(self.button_position) +1) % len(players))
+				print(players)
+				players = sorted(players, key = lambda x: x.seat_num)
+				players = sorted(players, key = lambda x: (self.player_list.index(x) - self.player_list.index(left_of_button) +1) % len(self.player_list))
 				players[0].is_showing = True
 				for player1 in players:
-					players_to_compare = players[0:index(player1)]
+					players_to_compare = players[0:players.index(player1)]
 					for player2 in players:
 						if player2.is_showing:
 							players_to_compare.append(player2)
-					if player1 in evaluate_hands(players_to_compare):
+					if player1 in self.evaluate_hands(players_to_compare):
 						player1.is_showing = True
 
 
@@ -302,7 +322,7 @@ class GameState:
 		#Hand strength obeys transitive property, so just nest find_winning_player calls 
 		#on the list to determine the overall winner
 		for i in range(0, len(player_list)):
-				temp = find_winning_player_and_hand(temp_winner, player_list[i], self.board)
+				temp = self.find_winning_player(temp_winner, player_list[i])
 				if temp:
 					temp_winner = temp
 
@@ -311,7 +331,7 @@ class GameState:
 		#add players who tie with the temp_winner to the winner list
 		winner_list = []
 		for player in player_list:
-			if find_winning_player(player, temp_winner) == None:
+			if self.find_winning_player(player, temp_winner) == None:
 				winner_list.append(player)
 
 
@@ -322,39 +342,39 @@ class GameState:
 		bestHandValue = max( [findStraightFlush(player.hole_cards,self.board),findFlush(player.hole_cards,self.board),findStraight(player.hole_cards,self.board),findPairs(player.hole_cards,self.board)], key = lambda x: x[1])
 		return bestHandValue[0]
 
-	def check_showing_players(self):
+	# def check_showing_players(self):
 
 
-		#get first player to show
-		live_players = self.get_live_players()
+	# 	#get first player to show
+	# 	live_players = self.get_live_players()
 
-		#check to see if the first player is the button
-		if live_players[0] == self.get_player_at_seat(button_position):
-			first_player = live_players[1]
-			first_player.is_showing = True
+	# 	#check to see if the first player is the button
+	# 	if live_players[0] == self.get_player_at_seat(button_position):
+	# 		first_player = live_players[1]
+	# 		first_player.is_showing = True
 
-			#need to loop over every player and compare hand with all the players who act before 
-			for index1 in range(2,len(live_players)):
-				hands_to_compare = live_players[1:index % len(live_players)]
-				#also need to compare with players who have opted to show early
-				for player in live_players:
-					if player.is_showing == True:
-						hands_to_compare.append(player)
-				#if the current player's hand is better than or equal to the best currently shown hand then they need to show
-				if live_players[index] in evaluate_hands(hand_to_compare):
-					live_players[index].is_showing = True
+	# 		#need to loop over every player and compare hand with all the players who act before 
+	# 		for index1 in range(2,len(live_players)):
+	# 			hands_to_compare = live_players[1:index % len(live_players)]
+	# 			#also need to compare with players who have opted to show early
+	# 			for player in live_players:
+	# 				if player.is_showing == True:
+	# 					hands_to_compare.append(player)
+	# 			#if the current player's hand is better than or equal to the best currently shown hand then they need to show
+	# 			if live_players[index] in evaluate_hands(hand_to_compare):
+	# 				live_players[index].is_showing = True
 
-		#Do the same as before if the first player isn't the button
-		else:
-			first_player = live_players[0]
-			first_player.is_showing = True
-			for index1 in range(1,len(live_players)):
-				hands_to_compare = live_players[1:index]
-				for player in live_players:
-					if player.is_showing == True:
-						hands_to_compare.append(player)
-				if live_players[index] in evaluate_hands(hand_to_compare):
-					live_players[index].is_showing = True
+	# 	#Do the same as before if the first player isn't the button
+	# 	else:
+	# 		first_player = live_players[0]
+	# 		first_player.is_showing = True
+	# 		for index1 in range(1,len(live_players)):
+	# 			hands_to_compare = live_players[1:index]
+	# 			for player in live_players:
+	# 				if player.is_showing == True:
+	# 					hands_to_compare.append(player)
+	# 			if live_players[index] in evaluate_hands(hand_to_compare):
+	# 				live_players[index].is_showing = True
 		
 
 class PlayerObject:
@@ -373,7 +393,7 @@ class PlayerObject:
 		self.is_showing = is_showing
 
 	def __repr__ (self):
-		return 'Seat: {0}, Stack: {1}, TotalBet: {2}, CurrentBet: {3}'.format(self.seat_num,self.stack_size, self.total_bet, self.current_bet)
+		return '(Seat: {0}, Stack: {1}, TotalBet: {2}, CurrentBet: {3})'.format(self.seat_num,self.stack_size, self.total_bet, self.current_bet)
 
 
 

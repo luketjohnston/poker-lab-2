@@ -55,13 +55,16 @@ class GameState:
 
 	def get_live_player_to_left(self,player):
 		#returns next live player to left of input player
-		live_players = deepcopy(self.get_live_players())
+		live_players = self.get_live_players()
+		button_player = self.get_player_at_seat(self.button_position)
 		if player not in live_players:
 			live_players.append(player)
-			live_players = sorted(live_players, key = lambda x: x.seat_num)
-			live_players = sorted(live_players, key = lambda x: (player_list.index(x)-player_list.index(button_player)) % len(player_list))
+			live_players = sorted(self.live_players, key = lambda x: x.seat_num)
+			live_players = sorted(self.live_players, key = lambda x: (self.player_list.index(x)-self.player_list.index(button_player)) % self.player_list)
 		index = live_players.index(player)
-		return live_players[(index +1) % len(live_players)]
+		player_to_left = live_players[(index + 1) % len(live_players)]
+
+		return player_to_left
 
 	def get_player_to_right(self, player):
 		#return player to right of input player
@@ -96,8 +99,11 @@ class GameState:
 		#Returns the minimum raise amount for player given the current
 		#valid raise and current max bet
 		largest_current_bet = max([x.current_bet for x in self.player_list])
-		return (self.last_valid_raiser.current_bet)*2 - player.current_bet + (largest_current_bet - self.last_valid_raiser.current_bet)
-
+		if self.last_valid_raiser:
+			return (self.last_valid_raiser.current_bet)*2 - player.current_bet + (largest_current_bet - self.last_valid_raiser.current_bet)
+		else:
+			return 0
+			
 	def post_blinds(self):
 		#update the total_bet of the small/big blind. 
 		#use this at start of hand to post blinds

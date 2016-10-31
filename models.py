@@ -20,15 +20,13 @@ class PokerSession(db.Model):
 
 
 	def __init__(self, name = '', small_blind = None, players = None, 
-		current_hand = None, big_blind = None, max_buy_in = None):
+		poker_hand = None, big_blind = None, max_buy_in = None):
 		self.id = uuid.uuid4()
 		self.small_blind = small_blind
 		if players:
 			self.players = players
 		if poker_hand:
 			self.poker_hand = poker_hand
-		if current_hand:
-			self.current_hand = current_hand
 		self.hand_in_session = False
 		self.big_blind = big_blind
 		self.name = name

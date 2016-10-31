@@ -351,8 +351,8 @@ function updateDisplay(results) {
 				} else {
 					// If player can't raise, and raise button
 					// is present, remove it
-					if($( '#raise-button' ).length !== 0) {
-						$( '#raise-button' ).remove();
+					if($( '#raise-button-container' ).length !== 0) {
+						$( '#raise-button-container' ).remove();
 					}
 					// If player can't raise but can call,
 					// the player can go all in
@@ -360,7 +360,8 @@ function updateDisplay(results) {
 						buttonColumn.prepend($('<div/>', {
 							class: 'dash-button',
 							id: 'all-in-button',
-							onclick: 'allIn()'
+							onclick: 'allIn()',
+							text: 'All-in'
 						}));
 					}
 				}
@@ -379,11 +380,15 @@ function updateDisplay(results) {
 				if($( '#call-button' ).length !== 0) {
 					$( '#call-button' ).remove();
 				}
+				if($( '#raise-button-container' ).length !== 0) {
+					$( '#raise-button-container' ).remove();
+				}
 				if($( '#all-in-button' ).length === 0) {
 					buttonColumn.prepend($('<div/>', {
 						class: 'dash-button',
 						id: 'all-in-button',
-						onclick: 'allIn()'
+						onclick: 'allIn()',
+						text: 'All-in'
 					}));
 				}
 			}

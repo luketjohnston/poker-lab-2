@@ -107,7 +107,7 @@
                     {% if results['can_bet'][results['player'].seat_num] %}
                         <div class="dash-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="check-button" onclick="check()">Check</div>
                         <div id="bet-button-container" class="dash-button button-input-container {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}">
-                            <input id='bet-input' class="button-text-input {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" onkeypress="isValidNumber(event.charCode)" {% if results['seat_to_act'] != results['player'].seat_num %}disabled{% endif %}>
+                            <input id='bet-input' class="button-text-input {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" onkeypress="return isValidNumber(event.charCode)" {% if results['seat_to_act'] != results['player'].seat_num %}disabled{% endif %}>
                             <div class="inner-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="bet-button" onclick="bet()">Bet</div>
                         </div>
                     {% else %}
@@ -115,7 +115,7 @@
                             <div class="dash-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="call-button" onclick="call()">Call</div>
                             {% if results['can_raise'][results['player'].seat_num] %}
                                 <div id="raise-button-container" class="dash-button button-input-container {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}">
-                                    <input id="raise-input" class="button-text-input {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" onkeypress="isValidNumber(event.charCode)" {% if results['seat_to_act'] != results['player'].seat_num %}disabled{% endif %}>
+                                    <input id="raise-input" class="button-text-input {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" onkeypress="return isValidNumber(event.charCode)" {% if results['seat_to_act'] != results['player'].seat_num %}disabled{% endif %}>
                                     <div class="inner-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="raise-button" onclick="raise()">Raise</div>
                                 </div>
                             {% else %}

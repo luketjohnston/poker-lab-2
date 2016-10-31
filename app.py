@@ -166,6 +166,7 @@ def add_player(current_session_id, admin_id):
 	current_session.players.append(new_player)
 
 	db.session.commit()
+	return True
 
 
 @app.route('/<current_session_id>/deal-hand/', methods=['POST'])
@@ -191,6 +192,8 @@ def deal_hand(current_session_id):
 
 	db.session.add(current_hand)
 	db.session.commit()
+
+	return True
 
 @app.route('/<current_session_id>/<player_id>/<bet_size>/bet/', methods=['POST'])
 def bet(current_session_id, player_id, bet_size):
@@ -231,6 +234,8 @@ def bet(current_session_id, player_id, bet_size):
 	
 		db.session.commit()
 
+	return True
+
 
 @app.route('/<current_session_id>/<player_id>/fold/', methods=['POST'])
 def fold(current_session_id, player_id):
@@ -251,6 +256,7 @@ def fold(current_session_id, player_id):
 
 		clean_up(current_session_id, seat_num, current_game_state, current_session)
 
+	return True
 
 @app.route('/<current_session_id>/<player_id>/call/', methods=['POST'])
 def call(current_session_id, player_id):
@@ -289,6 +295,7 @@ def call(current_session_id, player_id):
 			return 'Player Info: {0}, Next Seat to act: {1}, Street: {2}'.format(str(current_game_state.player_list) , 
 				str(current_game_state.player_to_act.seat_num), current_game_state.street)
 
+	return True
 
 @app.route('/<current_session_id>/<player_id>/<raise_size>/raise/', methods=['POST'])
 def player_raise(current_session_id, player_id, raise_size):
@@ -319,6 +326,8 @@ def player_raise(current_session_id, player_id, raise_size):
 
 			clean_up(current_session_id, seat_num, current_game_state, current_session)
 
+	return True
+
 @app.route('/<current_session_id>/<player_id>/check/', methods=['POST'])
 def check(current_session_id, player_id):
 	player_id = int(player_id)
@@ -328,6 +337,11 @@ def check(current_session_id, player_id):
 	seat_num = current_player.seat_num
 	current_game_state = current_hand.game_state
 	current_player_object = current_game_state.get_player_at_seat(seat_num)
+	current_game_state.player_to_act = current_game_state.get_live_player_to_left(current_player_object)
+	current_hand.game_state = deepcopy(current_game_state)
+	db.session.commit()
+
+	return True
 	
 
 
@@ -363,6 +377,7 @@ def all_in(current_session_id, player_id):
 
 		clean_up(current_session_id, seat_num, current_game_state, current_session)
 
+	return True
 
 @app.route('/<current_session_id>/start-new-hand/')
 def make_new_hand(current_session_id, seat_num):
@@ -384,6 +399,8 @@ def make_new_hand(current_session_id, seat_num):
 	db.session.add(new_hand)
 	db.session.commit()
 
+	return True
+
 @app.route('/<current_session_id>/<seat_num>/continue-playing/')
 def continue_playing(current_session_id, seat_num):
 	 #move button and start new hand
@@ -396,6 +413,8 @@ def continue_playing(current_session_id, seat_num):
 
 	current_session.poker_hand.game_state = deepcopy(current_game_state)
 
+	return True
+
 @app.route('/<current_session_id>/<seat_num>/show-cards')
 def show_cards(current_session_id, seat_num):
 
@@ -407,6 +426,8 @@ def show_cards(current_session_id, seat_num):
 	current_game_state.set_showing_players()
 
 	current_session.poker_hand.game_state = deepcopy(current_game_state)
+
+	return True
 	
 
 

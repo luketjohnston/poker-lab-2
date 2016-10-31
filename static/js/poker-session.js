@@ -14,7 +14,7 @@ function retrieveGamestate() {
 }
 
 function isValidNumber(char) {
-	return char >= 48 && char <= 57;
+	return (char >= 48 && char <= 57) || char == 46;
 }
 
 function mod(n, m) {
@@ -274,7 +274,7 @@ function updateDisplay(results) {
 				var input = $('<input/>', {
 					class: 'button-text-input',
 					id: 'bet-input',
-					onkeypress: 'isValidNumber(event.charCode)'
+					onkeypress: 'return isValidNumber(event.charCode)'
 				});
 				var betButton = $('<div/>', {
 					class: 'inner-button',
@@ -324,7 +324,7 @@ function updateDisplay(results) {
 						var input = $('<input/>', {
 							class: 'button-text-input',
 							id: 'raise-input',
-							onkeypress: 'isValidNumber(event.charCode)'
+							onkeypress: 'return isValidNumber(event.charCode)'
 						});
 						var raiseButton = $('<div/>', {
 							class: 'inner-button',

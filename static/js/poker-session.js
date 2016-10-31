@@ -178,6 +178,44 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 				// hasn't started), remove bets on table
 				$( ".bet-info" ).remove();
 			}
+		} else {
+			if(results.currently_playing_seats[i] && 
+				results.current_bets[i] > 0) {
+				var betString = results.current_bets[i];
+				if(betString >= 1000){
+					betString = betString.toFixed(0);
+				} else {
+					betString = betString.toFixed(2);
+				}
+				// if this player has a bet, check if there
+				// is a bet at this seat
+				var betInfo = $("#bet-info-" + visIdx);
+				
+				// if there is no bet displayed, add it
+				if(betInfo.length === 0) {
+					$('<div/>', {
+						class: 'bet-info',
+						id: 'bet-info-' + visIdx
+					}).appendTo(pokerTable);
+					betInfo = $("#bet-info-" + visIdx);
+					$('<img/>', {
+						src: '/static/img/bet-icon.png',
+						style: 'height: 25px;'
+					}).appendTo(betInfo);
+					$('<div/>', {
+						class: 'bet-num',
+						text: betString
+					}).appendTo(betInfo);
+
+				} else {
+					// if there is a bet displayed, update it
+					betInfo.find('.bet-num').text(betString);
+				}
+			} else {
+				if($('#bet-info-0').length !== 0) {
+					$('#bet-info-0').remove();
+				}
+			}
 		}
 	}
 }
@@ -259,7 +297,7 @@ function updateDisplay(results) {
 	// if he can call or raise, etc
 	if(results.currently_playing_seats[playerSeatNum] && 
 		!results.folded_players[playerSeatNum]) {
-		
+
 		// Check if this player can bet
 		if(results.can_bet[playerSeatNum]) {
 			// If can bet, then remove the raise,
@@ -484,16 +522,21 @@ function call() {
 function raise() {
 	var raiseAmount = parseFloat($( '#raise-input' ).val());
 	var stackAmount = parseFloat($( '.dash-stack' ).text());
+	var currentBet = 0;
+	if($('#bet-info-0').length !== 0) {
+		currentBet = parseFloat($('#bet-info-0').find('.bet-num').text());
+	}
 	console.log('Raise: ' + raiseAmount);
 	console.log('Stack: ' + stackAmount);
-	if(raiseAmount < stackAmount) {
+	console.log('Current Bet: ' + currentBet);
+	if(raiseAmount < (stackAmount + currentBet)) {
 		console.log('Good raise: ' + raiseAmount);
 		var betUrl = raiseAmount + '/raise/';
 		$.ajax({
 			url: betUrl,
 			type: "POST"
 		});
-	} else if(raiseAmount === stackAmount) {
+	} else if(raiseAmount === (stackAmount + currentBet)) {
 		allIn();
 	} else {
 		console.log('Bad raise: ' + raiseAmount);

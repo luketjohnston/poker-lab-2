@@ -415,7 +415,10 @@ function dealHand() {
 
 
 function check() {
-	console.log(check);
+	$.ajax({
+		url: "check/",
+		type: "POST"
+	});
 }
 
 
@@ -453,13 +456,20 @@ function raise() {
 	if(raiseAmount <= stackAmount) {
 		console.log('Good raise: ' + raiseAmount);
 		var betUrl = raiseAmount + '/raise/';
-		// $.ajax({
-		// 	url: betUrl,
-		// 	type: "POST"
-		// });
+		$.ajax({
+			url: betUrl,
+			type: "POST"
+		});
 	} else {
-		console.log('Bad bet: ' + betAmount);
+		console.log('Bad raise: ' + betAmount);
 	}
+}
+
+function allIn() {
+	$.ajax({
+		url: "all-in/",
+		type: "POST"
+	});
 }
 
 function fold() {

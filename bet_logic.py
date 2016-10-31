@@ -56,7 +56,7 @@ class GameState:
 	def get_live_player_to_left(self,player):
 		#returns next live player to left of input player
 		live_players = deepcopy(self.get_live_players())
-		if player not in live__players:
+		if player not in live_players:
 			live_players.append(player)
 			live_players = sorted(live_players, key = lambda x: x.seat_num)
 			live_players = sorted(live_players, key = lambda x: (player_list.index(x)-player_list.index(button_player)) % len(player_list))

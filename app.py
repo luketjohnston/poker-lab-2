@@ -19,15 +19,6 @@ def index():
 
 @app.route('/create-session/', methods=['POST'])
 def create_session():
-	print('HERE')
-	print(request.form)
-	print(request.form['username'])
-	print(request.form['email'])
-	print(request.form['session-name'])
-	print(request.form['max-buy-in'])
-	print(request.form['player-stack'])
-	print(request.form['small-blind'])
-	# print(request.form['big-blind'])
 
 	new_admin_player = Player(username = request.form['username'].lower(),
 		seat_num = 5, 
@@ -75,7 +66,6 @@ def game_and_session_info(current_session):
 		game_state = current_session.poker_hand.game_state
 		results = get_game_state_dict(current_session.id)
 		if game_state.street != 0:
-			print(game_state.street)
 			results['board'] = [card.get_string_tuple() for card in game_state.board][:(2+game_state.street)]
 		else:
 			results['board'] = []
@@ -154,7 +144,6 @@ def poker_room(current_session_id, player_id):
 			game_state.get_player_at_seat(current_player.seat_num).hole_cards]
 
 	current_player.stack_size = int(current_player.stack_size)
-	print(current_session.players)
 	results['player'] = current_player
 	results['session'] = current_session
 	return render_template('poker-session.html', results=results)
@@ -198,7 +187,6 @@ def deal_hand(current_session_id):
 
 	#establish connection between hand and session
 	current_session.poker_hand = current_hand
-	print(current_session.poker_hand)
 	current_hand.poker_session = current_session
 
 	db.session.add(current_hand)
@@ -302,14 +290,15 @@ def call(current_session_id, player_id):
 				str(current_game_state.player_to_act.seat_num), current_game_state.street)
 
 
-@app.route('/current_session_id>/<seat_num>/<raise_size>/raise/')
-def player_raise(current_session_id, seat_num, raise_size):
-	seat_num = int(seat_num)
-	bet_size = float(bet_size)
+@app.route('/<current_session_id>/<player_id>/<raise_size>/raise/', methods=['POST'])
+def player_raise(current_session_id, player_id, raise_size):
+	player_id = int(player_id)
+	raise_size = float(raise_size)
 
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
 	current_hand = current_session.poker_hand
-	current_player = Player.query.filter_by(poker_session_id = current_session_id, seat_num = seat_num).first()
+	current_player = Player.query.filter_by(id = player_id, poker_session_id = current_session_id).first()
+	seat_num = current_player.seat_num
 	current_game_state = current_hand.game_state
 	current_player_object = current_game_state.get_player_at_seat(seat_num)
 
@@ -330,12 +319,13 @@ def player_raise(current_session_id, seat_num, raise_size):
 
 			clean_up(current_session_id, seat_num, current_game_state, current_session)
 
-@app.route('/<current_session_id>/<seat_num>/check')
-def check(current_session_id, seat_num_):
-
+@app.route('/<current_session_id>/<player_id>/check/', methods=['POST'])
+def check(current_session_id, player_id):
+	player_id = int(player_id)
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
 	current_hand = current_session.poker_hand
-	current_player = Player.query.filter_by(poker_session_id = current_session_id, seat_num = seat_num).first()
+	current_player = Player.query.filter_by(id = player_id, poker_session_id = current_session_id).first()
+	seat_num = current_player.seat_num
 	current_game_state = current_hand.game_state
 	current_player_object = current_game_state.get_player_at_seat(seat_num)
 	
@@ -440,8 +430,6 @@ def make_new_game_state(current_session_id, new_button_position, small_blind):
 		players_in_hand.append(PlayerObject(current_session.players[i].seat_num, current_session.players[i].stack_size, hole_cards = current_hole_cards[i]))
 
 	#Instantiate new game_state with all players in hand and button moved
-	for playerObj in players_in_hand:
-		print(playerObj.__dict__)
 	new_game_state = GameState(player_list = players_in_hand, board = current_board, button_position = new_button_position, small_blind = small_blind)
 
 	##post blinds in game_state, also sets player_to_act and last_valid_raiser variables in game_state
@@ -487,7 +475,6 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session):
 
 	#check if action is over on this street, but hand is not over
 	elif current_game_state.is_action_closed() and not current_game_state.street == 3:
-		print('street over')
 		current_game_state.street += 1
 		current_game_state.player_to_act = current_game_state.player_list[1]
 		for player_object in current_game_state.player_list:
@@ -538,7 +525,6 @@ def get_game_state_dict(current_session_id):
 		stack_sizes[player.seat_num] = player.stack_size
 		folded_players[player.seat_num] = player.is_folded
 		min_raises[player.seat_num] = current_game_state.get_min_raise(player)
-		print(player.__dict__)
 		showing_players[player.seat_num] = player.is_showing
 
 

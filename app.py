@@ -310,7 +310,7 @@ def player_raise(current_session_id, player_id, raise_size):
 	current_game_state = current_hand.game_state
 	current_player_object = current_game_state.get_player_at_seat(seat_num)
 
-	if current_player_object == current_player_object.player_to_act:
+	if current_player_object == current_game_state.player_to_act:
 		if current_game_state.raising_allowed == True:
 			if current_player_object == current_game_state.player_to_act:
 

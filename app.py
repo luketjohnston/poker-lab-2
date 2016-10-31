@@ -69,11 +69,17 @@ def game_and_session_info(current_session):
 			results['board'] = [card.get_string_tuple() for card in game_state.board][:(2+game_state.street)]
 		else:
 			results['board'] = []
+		results['currently_playing_seats'] = {i : False for i in range(1,11)}
+		for player in current_session.players:
+			results['currently_playing_seats'][player.seat_num] = \
+			player.seat_num in [x.seat_num for x in game_state.player_list]
 			
 	else:
 		results = {'board': []}
+		results['currently_playing_seats'] = {i : False for i in range(1,11)}
 
 	results['filled_seats'] = {i : False for i in range(1,11)}
+	
 	results['usernames'] = {}
 	results['stacks'] = {}
 	for player in current_session.players:
@@ -120,6 +126,7 @@ def retrieve_gamestate(current_session_id, player_id):
 		results['winning_hands'] = winning_hands
 		results['pot_sizes'] = pot_sizes
 
+	if results['currently_playing_seats'][current_player.seat_num]:
 		results['hole_cards'] = [card.get_string_tuple() for card in \
 			current_game_state.get_player_at_seat(current_player.seat_num).hole_cards]
 	else:
@@ -138,7 +145,7 @@ def poker_room(current_session_id, player_id):
 		id = player_id).first()
 
 	results = game_and_session_info(current_session)
-	if current_session.poker_hand:
+	if results['currently_playing_seats'][current_player.seat_num]:
 		game_state = current_session.poker_hand.game_state
 		results['hole_cards'] = [card.get_string_tuple() for card in \
 			game_state.get_player_at_seat(current_player.seat_num).hole_cards]
@@ -168,7 +175,7 @@ def add_player(current_session_id, admin_id):
 	current_session.players.append(new_player)
 
 	db.session.commit()
-	return True
+	return 'Success.'
 
 	return True
 
@@ -197,7 +204,7 @@ def deal_hand(current_session_id):
 	db.session.add(current_hand)
 	db.session.commit()
 
-	return True
+	return 'Success.'
 
 @app.route('/<current_session_id>/<player_id>/<bet_size>/bet/', methods=['POST'])
 def bet(current_session_id, player_id, bet_size):
@@ -238,7 +245,7 @@ def bet(current_session_id, player_id, bet_size):
 	
 		db.session.commit()
 
-	return True
+	return 'Success.'
 
 
 @app.route('/<current_session_id>/<player_id>/fold/', methods=['POST'])
@@ -260,7 +267,7 @@ def fold(current_session_id, player_id):
 
 		clean_up(current_session_id, seat_num, current_game_state, current_session)
 
-	return True
+	return 'Success.'
 
 @app.route('/<current_session_id>/<player_id>/call/', methods=['POST'])
 def call(current_session_id, player_id):
@@ -296,7 +303,7 @@ def call(current_session_id, player_id):
 
 			clean_up(current_session_id, seat_num, current_game_state, current_session)
 
-	return 'Success'
+	return 'Success.'
 
 @app.route('/<current_session_id>/<player_id>/<raise_size>/raise/', methods=['POST'])
 def player_raise(current_session_id, player_id, raise_size):
@@ -330,7 +337,7 @@ def player_raise(current_session_id, player_id, raise_size):
 
 	return True 
 
-	return True
+	return 'Success.'
 
 @app.route('/<current_session_id>/<player_id>/check/', methods=['POST'])
 def check(current_session_id, player_id):
@@ -345,8 +352,9 @@ def check(current_session_id, player_id):
 
 	if current_player_object == current_game_state.player_to_act:
 		clean_up(current_session_id, seat_num, current_game_state, current_session)
+	return 'Success.'
 
-	return True
+	
 	
 
 
@@ -382,7 +390,7 @@ def all_in(current_session_id, player_id):
 
 		clean_up(current_session_id, seat_num, current_game_state, current_session)
 
-	return True
+	return 'Success.'
 
 
 @app.route('/<current_session_id>/start-new-hand/')
@@ -405,7 +413,7 @@ def make_new_hand(current_session_id, seat_num):
 	db.session.add(new_hand)
 	db.session.commit()
 
-	return True
+	return 'Success.'
 
 @app.route('/<current_session_id>/<seat_num>/continue-playing/')
 def continue_playing(current_session_id, seat_num):
@@ -419,7 +427,7 @@ def continue_playing(current_session_id, seat_num):
 
 	current_session.poker_hand.game_state = deepcopy(current_game_state)
 
-	return True
+	return 'Success.'
 
 @app.route('/<current_session_id>/<seat_num>/show-cards')
 def show_cards(current_session_id, seat_num):
@@ -434,7 +442,7 @@ def show_cards(current_session_id, seat_num):
 		current_game_state.set_showing_players()
 		current_session.poker_hand.game_state = deepcopy(current_game_state)
 
-	return True
+	return 'Success.'
 
 
 def make_new_game_state(current_session_id, new_button_position, small_blind):

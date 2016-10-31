@@ -117,6 +117,18 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 						} 
 					}
 				}
+				// If player is folded, or is
+				// in the poker room but not playing this hand
+				// then add the folded class
+				if(results.hasOwnProperty('can_bet')) {
+					if(!results.currently_playing_seats[i] || 
+						results.folded_players[i]) {
+						seat.addClass("folded");
+					} else {
+						// else remove folded class
+						seat.removeClass("folded");
+					}
+				}
 			}
 			// update bets
 			// first check if there are any bets
@@ -243,8 +255,10 @@ function updateDisplay(results) {
 	// This check is used to determine if there is
 	// actually a hand in progress, if so, we can
 	// access the dictionaries we need in results
-
-	if(results.hasOwnProperty('can_bet')) {
+	// if this player is folded we also need not assess
+	// if he can call or raise, etc
+	if(results.currently_playing_seats[playerSeatNum] && 
+		!results.folded_players[playerSeatNum]) {
 		
 		// Check if this player can bet
 		if(results.can_bet[playerSeatNum]) {
@@ -258,16 +272,6 @@ function updateDisplay(results) {
 			}
 			if($('#all-in-button').length !== 0) {
 				$('#all-in-button').remove();
-			}
-
-			// If player can bet, it can check
-			if($('#check-button').length === 0) {
-				$('<div/>', {
-					class: 'dash-button',
-					id: 'check-button',
-					onclick: 'check()',
-					text: 'Check'
-				}).appendTo(buttonColumn);
 			}
 			// If there's no bet button, add one
 			if($( '#bet-button' ).length === 0) {
@@ -288,8 +292,19 @@ function updateDisplay(results) {
 				});
 				input.appendTo(buttonContainer);
 				betButton.appendTo(buttonContainer);
-				buttonContainer.appendTo(buttonColumn);
+				buttonColumn.prepend(buttonContainer);
 			}
+
+			// If player can bet, it can check
+			if($('#check-button').length === 0) {
+				buttonColumn.prepend($('<div/>', {
+					class: 'dash-button',
+					id: 'check-button',
+					onclick: 'check()',
+					text: 'Check'
+				}));
+			}
+			
 		} else {
 			// If player cannot bet
 			// remove bet button and check button
@@ -303,17 +318,10 @@ function updateDisplay(results) {
 
 			// Check if player can call
 			if(results.can_call[playerSeatNum]) {
-				if($( '#call-button' ).length === 0) {
-					$('<div/>', {
-						class: 'dash-button',
-						id: 'call-button',
-						onclick: 'call()',
-						text: 'Call'
-					}).appendTo(buttonColumn);
-				}
+				
 				// The player can only possibly raise if he/she
 				// also can call
-				if(results.can_raise[playerSeatNum]) {
+				if(results.can_raise[playerSeatNum] && results.is_raising_allowed) {
 					// If player can raise, check if the all-in
 					// button is there, remove it if so
 					if($( '#all-in-button' ).length !== 0) {
@@ -338,7 +346,7 @@ function updateDisplay(results) {
 						});
 						input.appendTo(buttonContainer);
 						raiseButton.appendTo(buttonContainer);
-						buttonContainer.appendTo(buttonColumn);
+						buttonColumn.prepend(buttonContainer);
 					}
 				} else {
 					// If player can't raise, and raise button
@@ -349,13 +357,20 @@ function updateDisplay(results) {
 					// If player can't raise but can call,
 					// the player can go all in
 					if($( '#all-in-button' ).length === 0) {
-						$('<div/>', {
+						buttonColumn.prepend($('<div/>', {
 							class: 'dash-button',
 							id: 'all-in-button',
 							onclick: 'allIn()'
-
-						}).appendTo(buttonColumn);
+						}));
 					}
+				}
+				if($( '#call-button' ).length === 0) {
+					buttonColumn.prepend($('<div/>', {
+						class: 'dash-button',
+						id: 'call-button',
+						onclick: 'call()',
+						text: 'Call'
+					}));
 				}
 
 			} else {
@@ -364,16 +379,24 @@ function updateDisplay(results) {
 				if($( '#call-button' ).length !== 0) {
 					$( '#call-button' ).remove();
 				}
+				if($( '#all-in-button' ).length === 0) {
+					buttonColumn.prepend($('<div/>', {
+						class: 'dash-button',
+						id: 'all-in-button',
+						onclick: 'allIn()'
+					}));
+				}
 			}
 		}
 		// The player can always fold during hand
-		$( '#fold-button' ).remove();
-		$('<div/>', {
-			class: 'dash-button',
-			id: 'fold-button',
-			onclick: 'fold()',
-			text: 'Fold'
-		}).appendTo(buttonColumn);
+		if($( '#fold-button' ).length === 0) {
+			$('<div/>', {
+				class: 'dash-button',
+				id: 'fold-button',
+				onclick: 'fold()',
+				text: 'Fold'
+			}).appendTo(buttonColumn);
+		}
 
 		// if action is on this player, remove
 		// the disabled class from the action buttons
@@ -392,10 +415,13 @@ function updateDisplay(results) {
 			$( '.player-dash' ).removeClass('action-on');
 		}
 	} else {
-		// if hand is not in session, remove
-		// all action buttons
-		if($('.dash-button')) {
+		// if hand is not in session or player has folded,
+		// remove all action buttons and hole cards
+		if($('.dash-button').length !== 0) {
 			$('.dash-button').remove();
+		}
+		if($('#hole-cards-row').has('.card').length !== 0){
+			$('#hole-cards-row').find('.card').remove();
 		}
 	}
 }

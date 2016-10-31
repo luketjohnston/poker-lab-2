@@ -33,7 +33,8 @@
                     {% set vis_idx = (i - results['player'].seat_num) % 10 %}
                     {% if vis_idx != 0 %}
                         {% if results['filled_seats'][i] %}
-                            <div class="seat occupied {% if results['session'].poker_hand and results['folded_players'][i] %}folded {% endif %} {% if results['session'].poker_hand and results['seat_to_act'] == i %}action-on {% endif %}" id="seat-{{vis_idx}}">
+                            <div class="seat occupied {% if results['session'].poker_hand and ((not results['currently_playing_seats'][i]) or results['folded_players'][i]) %}folded {% endif %} {% if results['currently_playing_seats'][i] and results['seat_to_act'] == i %}action-on {% endif %}" id="seat-{{vis_idx}}">
+
                                 <div class="seat-title" >{{results['usernames'][i][0].upper()}}</div>
                                 <div class="player-byline" id="byline-{{vis_idx}}">
                                     <div>{{results['usernames'][i]}}</div>
@@ -46,7 +47,7 @@
                                     </div>
                                 {% endif %}
                             </div>
-                            {% if results['session'].poker_hand and results['current_bets'][i] > 0 %}
+                            {% if results['currently_playing_seats'][i] and results['current_bets'][i] > 0 %}
                                 <div class="bet-info" id="bet-info-{{vis_idx}}">
                                     <img src="{{ url_for('static', filename = 'img/bet-icon.png') }}" style="height: 25px;">
                                     <div class="bet-num">{{results['current_bets'][i]}}</div>
@@ -58,7 +59,7 @@
                             </div>
                         {% endif %}
                     {% else %}
-                        {% if results['session'].poker_hand and results['current_bets'][i] > 0 %}
+                        {% if results['currently_playing_seats'][i] and results['current_bets'][i] > 0 %}
                             <div class="bet-info" id="bet-info-{{vis_idx}}">
                                 <img src="{{ url_for('static', filename = 'img/bet-icon.png') }}" style="height: 25px;">
                                 <div class="bet-num">{{results['current_bets'][i]}}</div>
@@ -93,7 +94,7 @@
                     <div class="dash-stack">{{results['player'].stack_size}}</div>
                 </div>
                 <div class="flex-row" id="hole-cards-row">
-                    {% if results['session'].poker_hand %}
+                    {% if results['currently_playing_seats'][results['player'].seat_num] %}
                         {% for card in results['hole_cards'] %}
                             {% include 'card.html' %}
                         {% endfor %}
@@ -103,7 +104,7 @@
             <div class="vertical-partition" style="background-color: #9487AD"></div>
             <div class="col-xs-6" style="height: 100%;">
                 <div class="flex-col button-col col-xs-8">
-                {% if results['session'].poker_hand %}
+                {% if results['currently_playing_seats'][results['player'].seat_num] %}
                     {% if results['can_bet'][results['player'].seat_num] %}
                         <div class="dash-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="check-button" onclick="check()">Check</div>
                         <div id="bet-button-container" class="dash-button button-input-container {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}">

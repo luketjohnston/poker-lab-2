@@ -387,13 +387,13 @@ def all_in(current_session_id, player_id):
 		if current_player_object.can_raise == True:
 			current_game_state.last_valid_raiser = current_player_object
 		elif current_game_state.get_unfolded_player_to_left(current_player_object) == current_game_state.last_valid_raiser:
-			current_game_state.is_raising_allowed = False
+			current_game_state.raising_allowed = False
 
 		##See if the bet loop is being completed. The action may not be over yet, however, if there
 		##has been at least one invalid raise above the current valid raise
 		if current_game_state.get_unfolded_player_to_left(current_player_object) == current_game_state.last_valid_raiser and \
 			current_player_object.can_raise == False:
-			current_game_state.is_raising_allowed = False
+			current_game_state.raising_allowed = False
 
 		current_player_object.current_bet = current_player_object.current_bet + current_player_object.stack_size
 		current_player_object.total_bet = current_player_object.current_bet 

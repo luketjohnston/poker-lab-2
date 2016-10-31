@@ -11,6 +11,8 @@ class GameState:
 		self.board = board
 		self.small_blind = small_blind
 		self.raising_allowed = True
+		self.pause_for_street_end = False
+		self.pause_for_hand_end = False
 		self.player_to_act = None #This is set when post_blinds() function is called
 		self.last_valid_raiser = None #also set by post_blinds()
 		
@@ -53,7 +55,11 @@ class GameState:
 
 	def get_live_player_to_left(self,player):
 		#returns next live player to left of input player
-		live_players = self.get_live_players()
+		live_players = deepcopy(self.get_live_players())
+		if player not in live__players:
+			live_players.append(player)
+			live_players = sorted(live_players, key = lambda x: x.seat_num)
+			live_players = sorted(live_players, key = lambda x: (player_list.index(x)-player_list.index(button_player)) % len(player_list))
 		index = live_players.index(player)
 		return live_players[(index +1) % len(live_players)]
 
@@ -73,6 +79,13 @@ class GameState:
 		live_players = self.get_live_players()
 		if len(live_players) < 2:
 			return True
+		
+		if len([x for x in live_players if x.current_bet == 0]) == len(live_players):
+			if live_players[0].seat_num ==  self.button_position and self.player_to_act == live_players[0]:
+				return True
+			if self.player_to_act == live_players[-1]:
+				return True
+
 		for x in live_players:
 			if x.current_bet != live_players[0].current_bet:
 				return False
@@ -101,10 +114,12 @@ class GameState:
 		self.last_valid_raiser = self.player_list[2 % len(self.player_list)]
 
 	def can_bet(self, player):
-		#checks to see if player can open the action, i.e. all previous players have checked
+
+		#checks to see if player can open the action, i.e. no previous bets
 		for player in self.player_list:
 			if player.current_bet != 0:
 				return False
+
 		return True
 
 
@@ -128,7 +143,7 @@ class GameState:
 		index = self.get_live_players().index(self.player_to_act)
 		return self.get_live_players()[(index + 1) % len(self.get_live_players())]
 
-	def get_side_pot(self, hero, villians):
+	def get_max_side_pot(self, hero, villians):
 		#returns how much of the pot a player is elligible to win
 		total_pot = 0
 		for player_object in villians:
@@ -146,55 +161,201 @@ class GameState:
 
 		return total_pot
 
-	def award_all_pots(self):
-		#returns the winners of all different side pots present in the hand.
-		#output is a list of the form [[winner1.seat_num, side_pot_amount1],[winner2.seat_num, side_pot_amount2],...]
+	def get_side_pot_info(self):
+		#returns the total side pot along with all players elligible for that pot
+		#output is a list of the form [total_side_pot1,[player1,player2,...]], [total_side_pot2, [player..]]
 
-		players = deepcopy(self.player_list)
-		unfolded_players = deepcopy(self.get_unfolded_players())
-		unfolded_players = sorted(unfolded_players, key= lambda x: x.total_bet)
+
+		players_copy = deepcopy(self.player_list)
+		unfolded_players_copy = deepcopy(self.get_unfolded_players())
+		unfolded_players_copy = sorted(unfolded_players_copy, key= lambda x: x.total_bet)
 
 		#if everyone else folded, give pot to last unfolded player
-		if len(unfolded_players) == 1:
-			return [unfolded_players[1].seat_num, self.get_side_pot(unfolded_players[0], players)]
+		if len(self.unfolded_players) == 1:
+			return [self.get_max_side_pot(self.unfolded_players[0], self.player_list), [self.unfolded_players[0]]]
 		
 		#if the hand made it showdown, divide pot into side pots
-		side_pot_list = []
-		while len(unfolded_players) > 0:
+		side_pot_info_list = []
+		while len(unfolded_players_copy) > 0:
 			
-			#unfolded_players is sorted by total_bet, so calling get_side_pot on the first element
-			#returns the smallest side pot amount. The winners of this side pot are determined by evaluate_hands
-			#Then, the tuple [winner, side_pot_amount/# of winners] is added to the side_pot_list
+			## The player objects held in player_copy and winner_copy are not the actual player objects held by the player list 
+			## in the game_state object. Thus in order to return the actual player objects so that they can be used 
+			#to update the gamestate-- The copy lists are iterated over and the actual player_objects are pulled from the 
+			# game_state which correspond to the seat numbers.
+			unfolded_players_real = []
+			for x in unfolded_players_copy:
+				unfolded_players_real.append(self.get_player_at_seat(x.seat_num))
 
-			winners = evaluate_hands(unfolded_players, self.board)
-			for x in winners:
-				side_pot_list.append( [x.seat_num, self.get_side_pot(unfolded_players[0], players)/len(winners) ] )
+			## Finally, the total side pot amount and players elligible for the side pot are added to the side_pot_info_list
+			side_pot_info_list.append( [self.get_max_side_pot(unfolded_players_copy[0], players_copy), unfolded_players_real] )
 
 		
-			#After adding the winners of the previous smallest side pot, the total bets of all players are 
-			#reduced by the smallest previous bet. Then, any player with a total_bet <= 0 is removed from 
-			#unfolded_players/players. Thus, the next smallest total bet is again the first element of 
-			#unfolded_players.
-			smallest_bet = unfolded_players[0].total_bet
-			for i in range(0, len(players)):
-				players[i].total_bet -= smallest_bet
-			players = [x for x in players if x.total_bet > 0]
+			#After adding the side pot info of the previous smallest side pot, the total bets of all players_copy are 
+			#reduced by the smallest previous bet. Then, any player_copy with a total_bet <= 0 is removed from 
+			#unfolded_players_copy/players_copy. Thus, the next smallest total bet is again the first element of 
+			#unfolded_players_copy.
+			smallest_bet = unfolded_players_copy[0].total_bet
+			for i in range(0, len(players_copy)):
+				players_copy[i].total_bet -= smallest_bet
+			players_copy = [x for x in players_copy if x.total_bet > 0]
 			
 			
-			for i in range(0, len(unfolded_players)):
-				unfolded_players[i].total_bet -= smallest_bet
-			unfolded_players = [x for x in unfolded_players if x.total_bet > 0]
+			for i in range(0, len(unfolded_players_copy)):
+				unfolded_players_copy[i].total_bet -= smallest_bet
+			unfolded_players_copy = [x for x in unfolded_players_copy if x.total_bet > 0]
 
-			#This process is repeated until the length of unfolded_players becomes zero, at this point
+			#This process is repeated until the length of unfolded_players_copy becomes zero, at this point
 			#all side_pots have been awarded
 
-		return side_pot_list
+		return side_pot_info_list
 
+	def get_all_winnings(self):
+		## returns list of tuples containing a player in the hand and how much money they won from a side pot:
+		## [[player1, winnings1, total_side_pot1],[player2, winnings2, total_side_pot2],..], NOTE: A player may appear more than once
+		## if they win multiple side pots
+
+		player_winnings =[]
+		side_pot_info_list = self.get_side_pot_info()
+
+		for pot_info in side_pot_info_list:
+			#find the list of winners for a given side pot in side_pot_info_list
+			winners = evaluate_hands(pot_info[1])
+			for winner in winners:
+				#for each winner of the side pot, assign to them the appropriate amount of money
+				player_winnings.append(winner, pot_info[0]/len(winners), pot_info[0])
+			
+		return player_winnings
+
+	def set_showing_players(self):
+
+		side_pot_info_list = self.get_side_pot_info()
+		players_in_pots = [x[1] for x in side_pot_info_list]
+
+		if last_valid_raiser:
+			raise_seat_num = self.last_valid_raiser.seat_num
+			for players in players_in_pots:
+				players = sorted(players, lambda x: x.seat_num)
+				players = sorted(players, lambda x: (index(x) - index(raise_seat_num) +1) % len(players))
+				players[0].is_showing = True
+				for player1 in players:
+					players_to_compare = players[0:index(player1)]
+					for player2 in players:
+						if player.is_showing:
+							players_to_compare.append(player2)
+					if player1 in evaluate_hands(players_to_compare):
+						player1.is_showing = True
+
+		else:
+			for players in players_in_pots:
+				players = sorted(players, lambda x: x.seat_num)
+				players = sorted(players, lambda x: (index(x) - index(self.button_position) +1) % len(players))
+				players[0].is_showing = True
+				for player1 in players:
+					players_to_compare = players[0:index(player1)]
+					for player2 in players:
+						if player2.is_showing:
+							players_to_compare.append(player2)
+					if player1 in evaluate_hands(players_to_compare):
+						player1.is_showing = True
+
+
+
+
+			
+
+
+
+
+	def find_winning_player(self, player1,player2):
+	#compares two players' hands and returns the tuple of [winning player_object, winning hole_cards]#
+	#see hand_evaluator.py for info on these methods
+		bestHandValue1 = max( [findStraightFlush(player1.hole_cards,self.board),findFlush(player1.hole_cards,self.board),findStraight(player1.hole_cards,self.board),findPairs(player1.hole_cards,self.board)], key = lambda x: x[1])
+		bestHandValue2 = max( [findStraightFlush(player2.hole_cards,self.board),findFlush(player2.hole_cards,self.board),findStraight(player2.hole_cards,self.board),findPairs(player2.hole_cards,self.board)], key = lambda x: x[1])
+		
+		if(bestHandValue1[1]>bestHandValue2[1]):
+			return player1
+		if(bestHandValue2[1]>bestHandValue1[1]):
+			return player2
+
+		if(bestHandValue1[1] == bestHandValue2[1]):
+			
+			if bestHandValue1[0] < bestHandValue2[0]:
+				return player2
+			if bestHandValue1[0] > bestHandValue2[0]:
+				return player1
+			if bestHandValue2[0] == bestHandValue1[0]:
+				return None
+
+	def evaluate_hands(self, player_list):
+	#returns a list of the winning player given an input list of players and board
+	#Will return list of length 1 containing winner if no side pots or ties 
+	
+		#make the first player the temporary winner
+		temp_winner = player_list[0]
+
+		#Hand strength obeys transitive property, so just nest find_winning_player calls 
+		#on the list to determine the overall winner
+		for i in range(0, len(player_list)):
+				temp = find_winning_player_and_hand(temp_winner, player_list[i], self.board)
+				if temp:
+					temp_winner = temp
+
+		#Now check for split pots. temp_winner holds a winning player at this point,
+		#but there may be others with the same hand strength. Iterate through list and
+		#add players who tie with the temp_winner to the winner list
+		winner_list = []
+		for player in player_list:
+			if find_winning_player(player, temp_winner) == None:
+				winner_list.append(player)
+
+
+		return winner_list
+
+	def get_best_hand(self, player):
+	## returns the best 5 card hand given hole cards and board
+		bestHandValue = max( [findStraightFlush(player.hole_cards,self.board),findFlush(player.hole_cards,self.board),findStraight(player.hole_cards,self.board),findPairs(player.hole_cards,self.board)], key = lambda x: x[1])
+		return bestHandValue[0]
+
+	def check_showing_players(self):
+
+
+		#get first player to show
+		live_players = self.get_live_players()
+
+		#check to see if the first player is the button
+		if live_players[0] == self.get_player_at_seat(button_position):
+			first_player = live_players[1]
+			first_player.is_showing = True
+
+			#need to loop over every player and compare hand with all the players who act before 
+			for index1 in range(2,len(live_players)):
+				hands_to_compare = live_players[1:index % len(live_players)]
+				#also need to compare with players who have opted to show early
+				for player in live_players:
+					if player.is_showing == True:
+						hands_to_compare.append(player)
+				#if the current player's hand is better than or equal to the best currently shown hand then they need to show
+				if live_players[index] in evaluate_hands(hand_to_compare):
+					live_players[index].is_showing = True
+
+		#Do the same as before if the first player isn't the button
+		else:
+			first_player = live_players[0]
+			first_player.is_showing = True
+			for index1 in range(1,len(live_players)):
+				hands_to_compare = live_players[1:index]
+				for player in live_players:
+					if player.is_showing == True:
+						hands_to_compare.append(player)
+				if live_players[index] in evaluate_hands(hand_to_compare):
+					live_players[index].is_showing = True
+		
 
 class PlayerObject:
 
 	def __init__(self, seat_num, stack_size, total_bet = 0, current_bet = 0, 
-					is_folded = False, is_all_in = False, hole_cards = []):
+					is_folded = False, is_all_in = False, hole_cards = [], 
+					is_showing=False):
 		#initalize a PlayerObject. Note: hole_cards must a be a 2 element list of Card objects
 		self.seat_num = seat_num
 		self.current_bet = current_bet
@@ -203,58 +364,12 @@ class PlayerObject:
 		self.is_all_in = is_all_in
 		self.hole_cards = hole_cards
 		self.stack_size = stack_size
+		self.is_showing = is_showing
 
 	def __repr__ (self):
 		return 'Seat: {0}, Stack: {1}, TotalBet: {2}, CurrentBet: {3}'.format(self.seat_num,self.stack_size, self.total_bet, self.current_bet)
 
 
-
-def find_winning_player(player1,player2, board):
-	#compares two players' hands and returns the winning player_object#
-
-	#see hand_evaluator.py for info on these methods
-	bestHandValue1 = max( [findStraightFlush(player1.hole_cards,board),findFlush(player1.hole_cards,board),findStraight(player1.hole_cards,board),findPairs(player1.hole_cards,board)], key = lambda x: x[1])
-	bestHandValue2 = max( [findStraightFlush(player2.hole_cards,board),findFlush(player2.hole_cards,board),findStraight(player2.hole_cards,board),findPairs(player2.hole_cards,board)], key = lambda x: x[1])
-	
-	if(bestHandValue1[1]>bestHandValue2[1]):
-		return player1
-	if(bestHandValue2[1]>bestHandValue1[1]):
-		return player2
-
-	if(bestHandValue1[1] == bestHandValue2[1]):
-		
-		if bestHandValue1[0] < bestHandValue2[0]:
-			return player2
-		if bestHandValue1[0] > bestHandValue2[0]:
-			return player1
-		if bestHandValue2[0] == bestHandValue1[0]:
-			return None
-
-def evaluate_hands(player_list, board):
-	#returns a list of player_objects who won the pot. Will return 
-	#list of length 1 containing winner if no side pots 
-	
-
-	#make the first player the temporary winner
-	temp_winner = player_list[0]
-
-	#Hand strength obeys transitive property, so just nest find_winning_player calls 
-	#on the list to determine the overall winner
-	for i in range(0, len(player_list)):
-			temp = find_winning_player(temp_winner, player_list[i], board)
-			if temp:
-				temp_winner = temp
-
-	#Now check for split pots. temp_winner holds a winning player at this point,
-	#but there may be others with the same hand strength. Iterate through list and
-	#add players who tie with the temp_winner to the winner list
-	winner_list = []
-	for player in player_list:
-		if find_winning_player(player, temp_winner, board) == None:
-			winner_list.append(player)
-
-
-	return winner_list
 
 # deck = Deck()
 # board = [Card(2,1),Card(4,1),Card(5,1),Card(14,2),Card(13,2)]

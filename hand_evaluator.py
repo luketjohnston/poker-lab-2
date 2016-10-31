@@ -4,6 +4,7 @@ import math
 rankName = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']
 suitName = ['clubs','diamonds','hearts','spades']
 
+
 class Card:
 	def __init__(self,rank, suit):
 		self.rank = rank

@@ -125,17 +125,30 @@ class GameState:
 	def post_blinds(self):
 		#update the total_bet of the small/big blind. 
 		#use this at start of hand to post blinds
+		if len(self.player_list) > 2:
+			self.player_list[1].total_bet = self.small_blind
+			self.player_list[1].current_bet = self.small_blind
+			self.player_list[1].stack_size = self.player_list[1].stack_size - self.small_blind
 
-		self.player_list[1].total_bet = self.small_blind
-		self.player_list[1].current_bet = self.small_blind
-		self.player_list[1].stack_size = self.player_list[1].stack_size - self.small_blind
+			self.player_list[2 % len(self.player_list)].total_bet = 2*self.small_blind
+			self.player_list[2 % len(self.player_list)].current_bet = 2*self.small_blind
+			self.player_list[2 % len(self.player_list)].stack_size = self.player_list[2 % len(self.player_list)].stack_size - 2*self.small_blind
 
-		self.player_list[2 % len(self.player_list)].total_bet = 2*self.small_blind
-		self.player_list[2 % len(self.player_list)].current_bet = 2*self.small_blind
-		self.player_list[2 % len(self.player_list)].stack_size = self.player_list[2 % len(self.player_list)].stack_size - 2*self.small_blind
+			self.player_to_act = self.player_list[3 % len(self.player_list)]
+			self.last_valid_raiser = self.player_list[2]
 
-		self.player_to_act = self.player_list[3 % len(self.player_list)]
-		self.last_valid_raiser = self.player_list[2 % len(self.player_list)]
+		##If there are only two players, the preflop betting must be reversed.
+		else:
+			self.player_list[0].total_bet = self.small_blind
+			self.player_list[0].current_bet = self.small_blind
+			self.player_list[0].stack_size = self.player_list[0].stack_size - self.small_blind
+
+			self.player_list[1].total_bet = 2*self.small_blind
+			self.player_list[1].current_bet = 2*self.small_blind
+			self.player_list[1].stack_size = self.player_list[1].stack_size - 2*self.small_blind
+
+			self.player_to_act = self.player_list[0]
+			self.last_valid_raiser = self.player_list[1]
 
 	def can_bet(self, player):
 

@@ -13,6 +13,7 @@ class GameState:
 		self.raising_allowed = True
 		self.pause_for_street_end = False
 		self.pause_for_hand_end = False
+		self.run_board = False
 		self.player_to_act = None #This is set when post_blinds() function is called
 		self.last_valid_raiser = None #also set by post_blinds()
 		
@@ -93,9 +94,15 @@ class GameState:
 	def is_action_closed(self):
 		#test to see if action is closed
 		live_players = self.get_live_players()
-		if len(live_players) < 2:
+		unfolded_players = self.get_unfolded_players()
+
+		if len(unfolded_players) < 2:
+			return True
+
+		if len(live_players) == 0:
 			return True
 		
+		## look to see if it has checked around
 		if len([x for x in live_players if x.current_bet == 0]) == len(live_players):
 			if live_players[0].seat_num ==  self.button_position and self.player_to_act == live_players[0]:
 				return True
@@ -107,16 +114,43 @@ class GameState:
 			if live_players[0].seat_num != self.button_position and self.player_to_act != live_players[-1]:
 				return False
 
+		## if the bets of live players are not all equal to the max bet, then action is not closed
 		for x in live_players:
-			if x.current_bet != live_players[0].current_bet:
+			if x.current_bet != self.get_max_current_bet():
 				return False
 
+		## check to see if action should go to the big blind for his option preflop.
+		if self.street == 0 and live_players[0].current_bet < self.small_blind*4:
+
+			##check if it is heads up
+			if len(self.player_list) >2 :
+
+			##here player_to_act is the player that fired the route. Must check if that player is the small blind 
+			# if the small blind has just called, do not go to flop, must send action to big blind
+				if live_players[0].seat_num == self.button_position and self.player_to_act == live_players[1]:
+					return False
+				if live_players[0].seat_num != self.button_position and self.player_to_act == live_players[0]:
+					return False
+
+			# if it is heads up, then the preflop action is reversed. Must check to see if button has called-- not small blind
+			else:
+				if self.player_to_act == live_players[0]:
+					return False
+
+
 		return True
+
+	def get_max_current_bet(self):
+		#get maximum current bet
+		max_current_bet = max([x.current_bet for x in self.player_list])
+
+		return max_current_bet
 
 	def get_min_raise(self, player):
 		#Returns the minimum raise amount for player given the current
 		#valid raise and current max bet
-		largest_current_bet = max([x.current_bet for x in self.player_list])
+		largest_current_bet = self.get_max_current_bet()
+
 		if self.last_valid_raiser:
 			return (self.last_valid_raiser.current_bet)*2 - player.current_bet + (largest_current_bet - self.last_valid_raiser.current_bet)
 		else:
@@ -148,7 +182,6 @@ class GameState:
 			self.player_list[1].stack_size = self.player_list[1].stack_size - 2*self.small_blind
 
 			self.player_to_act = self.player_list[0]
-			self.last_valid_raiser = self.player_list[1]
 
 	def can_bet(self, player):
 
@@ -159,18 +192,22 @@ class GameState:
 
 		return True
 
+		#nned to set can_bet = True for big blind if everyone completes, then front end can check to see if 
+		#anyone can bet and raise, this should only happen to big blind when everyone completes.
+
 
 	def can_raise(self, player):
 		#checks to see if player has enough money to raise, given previous raise
 		if player.stack_size + player.current_bet >= self.get_min_raise(player):
 			return True
-		else: 
-			return False
+
+		## need to set can_raise = True for big blind if everyone completes
 		
 
 		#check to see if player has enough money to call the largest bet
+		
 	def can_call(self, player):
-		max_current_bet = max([x.current_bet for x in self.player_list])
+		max_current_bet = self.get_max_current_bet()
 		if player.stack_size + player.current_bet > max_current_bet:
 			return True
 		else:
@@ -209,7 +246,7 @@ class GameState:
 
 		#if everyone else folded, give pot to last unfolded player
 		if len(self.get_unfolded_players()) == 1:
-			return [self.get_max_side_pot(self.get_unfolded_players()[0], self.player_list), [self.get_unfolded_players()[0]]]
+			return [[self.get_max_side_pot(self.get_unfolded_players()[0], self.player_list), [self.get_unfolded_players()[0]]]]
 		
 		#if the hand made it showdown, divide pot into side pots
 		side_pot_info_list = []
@@ -273,12 +310,12 @@ class GameState:
 		if self.last_valid_raiser and (self.last_valid_raiser in self.get_unfolded_players()):
 			for players in players_in_pots:
 				players = sorted(players, key= lambda x: x.seat_num)
-				players = sorted(players, key = lambda x: (self.player_list.index(x) - self.players_list.index(self.last_valid_raiser) +1) % len(self.player_list))
+				players = sorted(players, key = lambda x: (self.player_list.index(x) - (self.player_list.index(self.last_valid_raiser) +1)) % len(self.player_list))
 				players[0].is_showing = True
 				for player1 in players:
 					players_to_compare = players[0:players.index(player1)]
 					for player2 in players:
-						if player.is_showing:
+						if player2.is_showing:
 							players_to_compare.append(player2)
 					if player1 in self.evaluate_hands(players_to_compare):
 						player1.is_showing = True
@@ -287,7 +324,7 @@ class GameState:
 			for players in players_in_pots:
 				print(players)
 				players = sorted(players, key = lambda x: x.seat_num)
-				players = sorted(players, key = lambda x: (self.player_list.index(x) - self.player_list.index(left_of_button) +1) % len(self.player_list))
+				players = sorted(players, key = lambda x: (self.player_list.index(x) - (self.player_list.index(left_of_button) +1)) % len(self.player_list))
 				players[0].is_showing = True
 				for player1 in players:
 					players_to_compare = players[0:players.index(player1)]

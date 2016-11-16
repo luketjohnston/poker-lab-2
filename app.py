@@ -51,16 +51,6 @@ def create_session():
 		player_id=new_admin_player.id))
 
 
-@app.route('/<current_session_id>/show-gamestate')
-def show_gamestate(current_session_id):
-	current_session = PokerSession.query.filter_by(id = current_session_id).first()
-	current_hand = current_session.poker_hand
-	current_game_state = current_hand.game_state
-	current_street = current_game_state.street
-
-	return 'Player Info: {0}, Next Seat to act: {1}, Street {2}'.format(str(current_game_state.player_list) , current_game_state.player_to_act.seat_num,
-			current_game_state.street) 
-
 def game_and_session_info(current_session):
 	if current_session.poker_hand:
 		game_state = current_session.poker_hand.game_state
@@ -131,6 +121,7 @@ def retrieve_gamestate(current_session_id, player_id):
 			current_game_state.get_player_at_seat(current_player.seat_num).hole_cards]
 	else:
 		results['hole_cards'] = []
+
 	return jsonify(results)
 
 
@@ -177,7 +168,6 @@ def add_player(current_session_id, admin_id):
 	db.session.commit()
 	return 'Success.'
 
-	return 'Sucess'
 
 
 @app.route('/<current_session_id>/deal-hand/', methods=['POST'])
@@ -225,6 +215,10 @@ def bet(current_session_id, player_id, bet_size):
 
 	if current_player_object == current_game_state.player_to_act:
 
+		#If the player is able to bet, it means no one has entered the pot and thus
+		#the player must be the last_valid_raiser
+		current_game_state.last_valid_raiser = current_player_object
+
 		#Update player stack and add bet to the bet list
 		#Can remove betsize from stack directly, because player cannot bet
 		# unless no other player has bet yet (i.e. all current_bets = 0
@@ -269,10 +263,17 @@ def fold(current_session_id, player_id):
 
 
 		#Check to see if the bet loop is completed, action may not be over if invalid raise happened
-		if current_game_state.get_unfolded_player_to_left(current_player_object) == current_game_state.last_valid_raiser:
-				current_game_state.is_raising_allowed = False
+		if current_game_state.street != 0 \
+			and current_game_state.get_unfolded_player_to_left(current_player_object) == current_game_state.last_valid_raiser :
+				current_game_state.is_raising_allowed = False 
 
-		clean_up(current_session_id, seat_num, current_game_state, current_session)
+		#if the street is pre-flop, must check to see if button has option. If the option is over (last_valid_raiser is no longer None), then proceed as normal
+		if current_game_state.street == 0 and current_game_state.last_valid_raiser :
+			if current_game_state.get_unfolded_player_to_left(current_player_object) == current_game_state.last_valid_raiser :
+				current_game_state.is_raising_allowed = False 
+		
+
+	clean_up(current_session_id, seat_num, current_game_state, current_session)
 
 
 	return 'Success.'
@@ -298,8 +299,14 @@ def call(current_session_id, player_id):
 
 			##See if the bet loop is being completed. The action may not be over yet, however, if there
 			##has been at least one invalid raise above the current valid raise
-			if current_game_state.get_unfolded_player_to_left(current_player_object) == current_game_state.last_valid_raiser:
-				current_game_state.is_raising_allowed = False
+			if current_game_state.street != 0 \
+			and current_game_state.get_unfolded_player_to_left(current_player_object) == current_game_state.last_valid_raiser :
+				current_game_state.is_raising_allowed = False 
+
+			#if the street is pre-flop, must check to see if button has option. If the option is over (last_valid_raiser is no longer None), then proceed as normal
+			if current_game_state.street == 0 and current_game_state.last_valid_raiser :
+				if current_game_state.get_unfolded_player_to_left(current_player_object) == current_game_state.last_valid_raiser :
+					current_game_state.is_raising_allowed = False 
 
 			#update player stack -- since player is calling, make his total bet equal to the max total bet
 			#reduce stack_size by how much more money needed to call (max bet - current bet)
@@ -396,7 +403,7 @@ def all_in(current_session_id, player_id):
 			current_game_state.raising_allowed = False
 
 		current_player_object.current_bet = current_player_object.current_bet + current_player_object.stack_size
-		current_player_object.total_bet = current_player_object.current_bet 
+		current_player_object.total_bet = current_player_object.total_bet + current_player_object.stack_size 
 		current_player_object.stack_size = 0
 		current_player.stack_size = 0
 		current_player_object.is_all_in = True
@@ -506,10 +513,13 @@ def make_new_game_state(current_session_id, new_button_position, small_blind):
 def clean_up(current_session_id, seat_num, current_game_state, current_session):
 	#Check to see if action is closed or not given the input gamestate/session. Adjust gamestate accordingly.
 
+
 	#check if hand is over:
 	if current_game_state.is_action_closed() and current_game_state.street == 3:
 
 		pot_list = current_game_state.get_all_winnings()
+		print(pot_list)
+
 		current_game_state.set_showing_players()
 
 		for player in current_session.players: 
@@ -528,30 +538,65 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session):
 
 		db.session.commit()
 
-	#check if action is over on this street, but hand is not over
-	elif current_game_state.is_action_closed() and not current_game_state.street == 3:
-		current_game_state.street += 1
+	#check if action is over but it is not on the river
+	elif current_game_state.is_action_closed() and current_game_state.street < 3:
 
-		#find which player is first to act on the new street
-		#live_players is sorted according to distance from button, so check if first element is button
-		#otherwise the first to act will be the first element of live_players
-		live_players = current_game_state.get_live_players()
-		if live_players[0].seat_num == current_game_state.button_position:
-			current_game_state.player_to_act = live_players[1]
+		##check to see if hand is over due to all players all-in
+		if len(current_game_state.get_live_players()) < 2 and len(current_game_state.get_unfolded_players()) > 1:
+
+			print('test')
+
+			current_game_state.street = current_game_state.street + 1
+			current_session.poker_hand.game_state = deepcopy(current_game_state)
+
+			db.session.commit()
+
+			clean_up(current_session_id, seat_num, current_session.poker_hand.game_state, current_session)
+
+		##check to see if hand is over due to all but one player folding
+		elif len(current_game_state.get_unfolded_players()) < 2:
+
+			current_game_state.set_showing_players()
+
+			current_player_object = current_game_state.get_unfolded_players()[0]
+			current_player = Player.query.filter_by(poker_session_id = current_session_id, seat_num = current_player_object.seat_num).first()
+
+			total_pot = current_game_state.get_total_pot()
+			current_player_object.stack_size = current_player_object.stack_size + total_pot
+			current_player.stack_size = current_player.stack_size + total_pot
+
+			current_game_state.pause_for_hand_end = True
+			current_session.poker_hand.game_state = deepcopy(current_game_state)
+
+			db.session.commit()
+
+		## check to see if action for street has closed, but the hand is not over
 		else:
-			current_game_state.player_to_act = live_players[0]
 
-		#set all current bets to zero for new street
-		for player_object in current_game_state.player_list:
-			player_object.current_bet = 0
+			current_game_state.street += 1
 
-		#reset the last_valid_raiser and pause for animation
-		current_game_state.last_valid_raiser = None
-		current_game_state.pause_for_street_end = True
+			#find which player is first to act on the new street
+			#live_players is sorted according to distance from button, so check if first element is button
+			#otherwise the first to act will be the first element of live_players
+			live_players = current_game_state.get_live_players()
+			if live_players[0].seat_num == current_game_state.button_position:
+				current_game_state.player_to_act = live_players[1]
+			else:
+				current_game_state.player_to_act = live_players[0]
 
-		current_session.poker_hand.game_state = deepcopy(current_game_state)
-		db.session.commit()
+			#set all current bets to zero for new street
+			for player_object in current_game_state.player_list:
+				player_object.current_bet = 0
 
+			#reset the last_valid_raiser and pause for animation
+			current_game_state.last_valid_raiser = None
+			current_game_state.pause_for_street_end = True
+			current_game_state.is_raising_allowed = True
+
+			current_session.poker_hand.game_state = deepcopy(current_game_state)
+			db.session.commit()
+
+	##if action is not closed, move the player to act
 	else:
 		#if the street is not over, move gamestates's player_to_act to the next person
 		# who is still able to act

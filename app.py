@@ -440,7 +440,8 @@ def all_in(current_session_id, player_id):
 	return 'Success.'
 
 
-@app.route('/<current_session_id>/<player_id>/start-new-hand/')
+
+@app.route('/<current_session_id>/<player_id>/start-new-hand/', methods=['POST'])
 def make_new_hand(current_session_id, player_id):
 	 #move button and start new hand
 

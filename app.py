@@ -119,7 +119,6 @@ def retrieve_gamestate(current_session_id, player_id):
 		current_hand = current_session.poker_hand
 		current_game_state = current_hand.game_state
 		winning_players = {x : False for x in range(1,11)}
-		winning_players={}
 		winning_hands ={}
 		winning_hole_cards = {}
 		pot_sizes = {}
@@ -617,7 +616,7 @@ def get_game_state_dict(current_session_id):
 	stack_sizes = {}
 	folded_players = {}
 	min_raises = {}
-	showing_players = {}
+	showing_cards = {}
 
 
 	for player in current_game_state.player_list:
@@ -629,7 +628,11 @@ def get_game_state_dict(current_session_id):
 		stack_sizes[player.seat_num] = player.stack_size
 		folded_players[player.seat_num] = player.is_folded
 		min_raises[player.seat_num] = current_game_state.get_min_raise(player)
-		showing_players[player.seat_num] = player.is_showing
+
+		if player.is_showing:
+			showing_cards[player.seat_num] = [card.get_string_tuple() for card in player.hole_cards]
+		else:
+			showing_cards[player.seat_num] = []
 
 
 	results = {}
@@ -653,7 +656,7 @@ def get_game_state_dict(current_session_id):
 	results['stack_sizes'] = stack_sizes
 	results['folded_players'] = folded_players
 	results['min_raises'] = min_raises
-	results['showing_players'] = showing_players
+	results['showing_cards'] = showing_cards
 
 	return results
 

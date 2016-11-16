@@ -10,7 +10,6 @@ function retrieveGamestate() {
 		url: target,
 		type: "GET",
 		success: function(data) {
-			console.log(data);
 			if(data['pause_for_hand_end']) {
 				console.log("TRUE");
 			}
@@ -18,7 +17,7 @@ function retrieveGamestate() {
 			if(data['pause_for_hand_end'] && !pauseInProgress) {
 				console.log("BEGIN PAUSE");
 				pauseInProgress = true;
-				window.setTimeout(function() {startNewHand(data);}, 30000);
+				window.setTimeout(function() {startNewHand(data);}, 20000);
 			} else {
 				updateDisplay(data);
 			}
@@ -36,8 +35,9 @@ function startNewHand(results) {
 	}
 	console.log("END PAUSE");
 	$('.poker-table').find('.card-row').children().remove();
-	$('.bet-info').remove();
 	$('#hole-cards-row').children().remove();
+	$('.show-cards-row').children().remove();
+	$('.bet-info').remove();
 	pauseInProgress = false;
 }
 
@@ -188,6 +188,15 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 						seat.removeClass("folded");
 					}
 				}
+				// update showing cards
+				var showCardsRow = $( "#show-cards-row-" + visIdx );
+				var showCards = showCardsRow.find('.card');
+				for(var j=showCards.length; j < results.showing_cards[i].length; j++) {
+					var card = createCardDiv(results.showing_cards[i][j]);
+					console.log(results.showing_cards[i][j]);
+					console.log(results.showing_cards);
+					card.appendTo(showCardsRow);
+				}
 			} else {
 				if(seat.hasClass("occupied")) {
 					seat.removeClass("occupied");
@@ -213,44 +222,50 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 			// update bets
 			// first check if there are any bets
 			if(results.hasOwnProperty('current_bets')) {
+				// only display the bets if this player is not
+				// currently showing their cards, otherwise the
+				// bets will obscure the cards
+				if(results.showing_cards[i] &&
+					results.showing_cards[i].length === 0) {
 				// if there are bets, check if this player has a bet
-				if(results.current_bets[i] > 0) {
-					var betString = results.current_bets[i];
-					if(betString >= 1000){
-						betString = betString.toFixed(0);
-					} else {
-						betString = betString.toFixed(2);
-					}
-					// if this player has a bet, check if there
-					// is a bet at this seat
-					var betInfo = $("#bet-info-" + visIdx);
-					
-					// if there is no bet displayed, add it
-					if(betInfo.length === 0) {
-						$('<div/>', {
-							class: 'bet-info',
-							id: 'bet-info-' + visIdx
-						}).appendTo(pokerTable);
-						betInfo = $("#bet-info-" + visIdx);
-						$('<img/>', {
-							src: '/static/img/bet-icon.png',
-							style: 'height: 25px;'
-						}).appendTo(betInfo);
-						$('<div/>', {
-							class: 'bet-num',
-							text: betString
-						}).appendTo(betInfo);
+					if(results.current_bets[i] > 0) {
+						var betString = results.current_bets[i];
+						if(betString >= 1000){
+							betString = betString.toFixed(0);
+						} else {
+							betString = betString.toFixed(2);
+						}
+						// if this player has a bet, check if there
+						// is a bet at this seat
+						var betInfo = $("#bet-info-" + visIdx);
+						
+						// if there is no bet displayed, add it
+						if(betInfo.length === 0) {
+							$('<div/>', {
+								class: 'bet-info',
+								id: 'bet-info-' + visIdx
+							}).appendTo(pokerTable);
+							betInfo = $("#bet-info-" + visIdx);
+							$('<img/>', {
+								src: '/static/img/bet-icon.png',
+								style: 'height: 25px;'
+							}).appendTo(betInfo);
+							$('<div/>', {
+								class: 'bet-num',
+								text: betString
+							}).appendTo(betInfo);
 
+						} else {
+							// if there is a bet displayed, update it
+							betInfo.find('.bet-num').text(betString);
+						}
 					} else {
-						// if there is a bet displayed, update it
-						betInfo.find('.bet-num').text(betString);
-					}
-				} else {
-					// if this player doesn't have a bet, check
-					// if this seat has a bet on the table and
-					// remove it
-					if(pokerTable.has("#bet-info-" + visIdx).length !== 0) {
-						pokerTable.find("#bet-info-" + visIdx).remove();
+						// if this player doesn't have a bet, check
+						// if this seat has a bet on the table and
+						// remove it
+						if(pokerTable.has("#bet-info-" + visIdx).length !== 0) {
+							pokerTable.find("#bet-info-" + visIdx).remove();
+						}
 					}
 				}
 			} else {

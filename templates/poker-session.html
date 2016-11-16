@@ -54,8 +54,8 @@
                                     <div class="bet-num">{{results['current_bets'][i]}}</div>
                                 </div>
                             {% endif %}
-                            <div class="show-card-row flex-row" id="show-card-row-{{vis_idx}}">
-                                {% for card in results['other_hole_cards'][i] %}
+                            <div class="show-cards-row flex-row" id="show-cards-row-{{vis_idx}}">
+                                {% for card in results['showing_cards'][i] %}
                                     {% include 'card.html' %}
                                 {% endfor %}
                             </div>

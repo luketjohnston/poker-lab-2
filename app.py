@@ -441,8 +441,8 @@ def all_in(current_session_id, player_id):
 	return 'Success.'
 
 
-@app.route('/<current_session_id>/<player_id>/start-new-hand/')
-def make_new_hand(current_session_id, player_id, seat_num):
+@app.route('/<current_session_id>/<player_id>/start-new-hand/', methods=['POST'])
+def make_new_hand(current_session_id, player_id):
 	 #move button and start new hand
 
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()

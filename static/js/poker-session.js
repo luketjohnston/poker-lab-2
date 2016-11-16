@@ -16,9 +16,9 @@ function retrieveGamestate() {
 			}
 			console.log(pauseInProgress);
 			if(data['pause_for_hand_end'] && !pauseInProgress) {
-				console.log("GAME END PAUSE")
+				console.log("BEGIN PAUSE");
 				pauseInProgress = true;
-				window.setTimeout(startNewHand(data), 30000);
+				window.setTimeout(function() {startNewHand(data);}, 30000);
 			} else {
 				updateDisplay(data);
 			}
@@ -27,16 +27,18 @@ function retrieveGamestate() {
 }
 
 function startNewHand(results) {
-	if(results['player'].is_admin) {
+	var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
+	if(results['admin_seat'] === playerSeatNum) {
 		$.ajax({
 			url: "start-new-hand/",
-			type: "POST",
-			success: function(data) {
-				console.log("GAME END CONTINUE")
-				pauseInProgress = false;
-			}
+			type: "POST"
 		});
 	}
+	console.log("END PAUSE");
+	$('.poker-table').find('.card-row').children().remove();
+	$('.bet-info').remove();
+	$('#hole-cards-row').children().remove();
+	pauseInProgress = false;
 }
 
 function animateValueChange(startVal, endVal, displayObject) {

@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>Poker Lab</title>
+    <link rel="shortcut icon" href="{{ url_for('static',filename='img/spades.png') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="//netdna.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" media="screen">
     <link rel = "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/index.css') }}">
@@ -53,6 +54,11 @@
                                     <div class="bet-num">{{results['current_bets'][i]}}</div>
                                 </div>
                             {% endif %}
+                            <div class="show-card-row flex-row" id="show-card-row-{{vis_idx}}">
+                                {% for card in results['other_hole_cards'][i] %}
+                                    {% include 'card.html' %}
+                                {% endfor %}
+                            </div>
                         {% else %}
                             <div class="seat unoccupied" id="seat-{{vis_idx}}">
                                 <div class="seat-title unoccupied {% if results['player'].is_admin %}mutable {% endif %}" {% if results['player'].is_admin %}onclick="addPlayer({{i}})"{% endif %}>+</div>

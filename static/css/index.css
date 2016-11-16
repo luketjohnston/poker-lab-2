@@ -434,6 +434,64 @@ body {
     right: 9%;
 }
 
+#show-card-row-1 {
+	position: absolute;
+    top: 75%;
+    left: 11%;
+}
+
+#show-card-row-2 {
+	position: absolute;
+    top: 50%;
+    left: 1%;
+    transform: translateY(-50%);
+}
+
+#show-card-row-3 {
+	position: absolute;
+    top: 13%;
+    left: 6%;
+}
+
+#show-card-row-4 {
+	position: absolute;
+    top: 2%;
+    left: 20%;
+}
+
+#show-card-row-5 {
+	position: absolute;
+    top: 2%;
+    left: 50%;
+	transform: translateX(-50%);
+}
+
+#show-card-row-6 {
+	position: absolute;
+    top: 2%;
+    right: 20%;
+}
+
+#show-card-row-7 {
+	position: absolute;
+    top: 13%;
+    right: 6%;
+}
+
+#show-card-row-8 {
+	position: absolute;
+    top: 50%;
+    right: 1%;
+    transform: translateY(-50%);
+}
+
+#show-card-row-9 {
+	position: absolute;
+    top: 75%;
+    right: 11%;
+}
+
+
 
 .player-byline {
 	width: 100px;
@@ -643,6 +701,14 @@ body {
 	height: 25px;
 }
 
+.card-title {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	font-size: 60px;
+}
+
 .poker-table .card {
 	margin: 0 5px;
 	height: 100px;
@@ -654,12 +720,24 @@ body {
 	height: 17.5px;
 }
 
-.card-title {
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	font-size: 60px;
+.show-card-row .card {
+	margin: 0 2px;
+	height: 50px;
+    max-width: 35.7px;
+    min-width: 35.7px;
+    border-radius: 5px;
+}
+
+.show-card-row .suit-icon {
+	height: 8.75px;
+}
+
+.show-card-row .suit-icon {
+	height: 8.75px;
+}
+
+.show-card-row .card-title {
+	font-size: 30px;
 }
 
 .top-left-corner {

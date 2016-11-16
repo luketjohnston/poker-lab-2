@@ -2,15 +2,73 @@ window.setInterval(function(){
   retrieveGamestate();
 }, 5000);
 
+var pauseInProgress = false;
+
 function retrieveGamestate() {
 	var target = "retrieve-gamestate/";
 	$.ajax({
 		url: target,
 		type: "GET",
 		success: function(data) {
-            updateDisplay(data);
+			console.log(data);
+			if(data['pause_for_hand_end']) {
+				console.log("TRUE");
+			}
+			console.log(pauseInProgress);
+			if(data['pause_for_hand_end'] && !pauseInProgress) {
+				console.log("GAME END PAUSE")
+				pauseInProgress = true;
+				window.setTimeout(startNewHand(data), 30000);
+			} else {
+				updateDisplay(data);
+			}
         }
 	});
+}
+
+function startNewHand(results) {
+	if(results['player'].is_admin) {
+		$.ajax({
+			url: "start-new-hand/",
+			type: "POST",
+			success: function(data) {
+				console.log("GAME END CONTINUE")
+				pauseInProgress = false;
+			}
+		});
+	}
+}
+
+function animateValueChange(startVal, endVal, displayObject) {
+	if(startVal !== endVal) {
+		var countDirection = 1;
+		if(endVal < startVal) {
+			countDirection = -1;
+		}
+		$({countNum: startVal}).animate({countNum: endVal - countDirection}, {
+  			duration: 1000,
+  			easing:'linear',
+  			step: function() {
+    		// What todo on every count
+    			var countNumString = Math.ceil(this.countNum);
+    			if(countNumString >= 1000){
+					countNumString = countNumString.toFixed(0);
+				} else {
+					countNumString = countNumString.toFixed(2);
+				}
+    			displayObject.text(countNumString);
+  			},
+  			complete: function() {
+    			var numString = endVal;
+				if(numString >= 1000){
+					numString = numString.toFixed(0);
+				} else {
+					numString = numString.toFixed(2);
+				}
+				displayObject.text(numString);
+			}
+  		});
+	}
 }
 
 function isValidNumber(char) {
@@ -30,6 +88,9 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 			var seat = $( "#seat-"+visIdx );
 			// If that seat is filled
 			if(results.filled_seats[i]) {
+				if(seat.hasClass("unoccupied")) {
+					seat.removeClass("unoccupied");
+				}
 				// and has not already been marked occupied
 				if(! seat.hasClass("occupied")) {
 					// Mark it as occupied
@@ -71,13 +132,9 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 					// assume the necessary divs are present, and
 					// update those divs with new information
 					var stackString = results['stacks'][i];
-					if(stackString >= 1000){
-						stackString = stackString.toFixed(0);
-					} else {
-						stackString = stackString.toFixed(2);
-					}
-					// Update stack for this player
-					seat.find(".seat-stack").text(stackString);
+					animateValueChange(seat.find(".seat-stack").text(),
+						results['stacks'][i],
+						seat.find(".seat-stack"));
 					// Update dealer chip
 					if(results.button_seat == i) {
 						// if this seat is the button and doesn't
@@ -128,6 +185,27 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 						// else remove folded class
 						seat.removeClass("folded");
 					}
+				}
+			} else {
+				if(seat.hasClass("occupied")) {
+					seat.removeClass("occupied");
+					seat.children().remove();
+				}
+				seat.attr("class","seat unoccupied");
+				if(seat.has(".seat-title").length === 0) {
+					var classes = "seat-title unoccupied ";
+					var textChar = '';
+					var onclickFunc = '';
+					if(results['player'].is_admin) {
+						classes += "mutable";
+						textChar = '+';
+						onclickFunc = "addPlayer(" + i + ");";
+					}
+					$('<div/>', {
+	                	class: classes,
+	                	text: textChar,
+	                	onclick: onclickFunc
+	                	}).appendTo(seat);
 				}
 			}
 			// update bets
@@ -275,16 +353,14 @@ function updateDisplay(results) {
 		card.appendTo(holeCardsRow);
 	}
 	// Update this player's dash information
-	var stackString = results['stacks'][playerSeatNum];
-	if(stackString >= 1000){
-		stackString = stackString.toFixed(0);
-	} else {
-		stackString = stackString.toFixed(2);
-	}
-	$( '.dash-stack' ).text(stackString);
+	animateValueChange($( '.dash-stack' ).text(),
+		results['stacks'][playerSeatNum],
+		$( '.dash-stack' ));
 	// Update pot
 	if(results.hasOwnProperty('total_pot')) {
-		$( '.dash-pot' ).text(results.total_pot);
+		animateValueChange(parseFloat($( '.dash-pot' ).text()), 
+			parseFloat(results.total_pot),
+			$( '.dash-pot' ));
 	} else {
 		$( '.dash-pot' ).text('--');
 	}

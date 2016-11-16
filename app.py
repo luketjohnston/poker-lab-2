@@ -1,11 +1,29 @@
 from flask import Flask, request, redirect, url_for, jsonify, render_template
 from flask.ext.sqlalchemy import SQLAlchemy
 import os
+import logging
+import redis
+import gevent
+from flask_sockets import Sockets
+from gamestate_backend import GamestateBackend
+
 app = Flask(__name__)
 app.config.from_object(os.environ['APP_SETTINGS'])
+# set up db
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+# Set up jinja2 functionality
 app.jinja_env.add_extension('jinja2.ext.loopcontrols')
+# Set up redis
+# REDIS_URL = os.environ['REDIS_URL']
+# REDIS_CHAN = 'gamestate'
+# # set up sockets
+# sockets = Sockets(app)
+# redis = redis.from_url(REDIS_URL)
+# # Run GamestateBackend
+# gamestate_data = GamestateBackend(REDIS_CHAN)
+# gamestate_data.start()
+
 
 from models import *
 from hand_evaluator import Card, Deck
@@ -13,9 +31,16 @@ from bet_logic import *
 from copy import deepcopy
 
 
+###################################################
+#												  #
+#                 App Routes                      #
+#												  #
+###################################################
+
 @app.route('/')
 def index():
 	return render_template('index.html')
+
 
 @app.route('/create-session/', methods=['POST'])
 def create_session():
@@ -68,18 +93,18 @@ def game_and_session_info(current_session):
 		results = {'board': []}
 		results['currently_playing_seats'] = {i : False for i in range(1,11)}
 
-	results['filled_seats'] = {i : False for i in range(1,11)}
-	
-	results['usernames'] = {}
-	results['stacks'] = {}
-	for player in current_session.players:
-		results['filled_seats'][player.seat_num] = True
-		results['usernames'][player.seat_num] = player.username
-		results['stacks'][player.seat_num] = player.stack_size
 
-	return results
+@app.route('/<current_session_id>/show-gamestate')
+def show_gamestate(current_session_id):
+	current_session = PokerSession.query.filter_by(id = current_session_id).first()
+	current_hand = current_session.poker_hand
+	current_game_state = current_hand.game_state
+	current_street = current_game_state.street
 
-	
+	return 'Player Info: {0}, Next Seat to act: {1}, Street {2}'.format(str(current_game_state.player_list) , current_game_state.player_to_act.seat_num,
+			current_game_state.street) 
+
+
 @app.route('/<current_session_id>/<player_id>/retrieve-gamestate/', methods=['GET'])
 def retrieve_gamestate(current_session_id, player_id):
 
@@ -93,9 +118,6 @@ def retrieve_gamestate(current_session_id, player_id):
 	if current_session.poker_hand:
 		current_hand = current_session.poker_hand
 		current_game_state = current_hand.game_state
-
-		
-
 		winning_players = {x : False for x in range(1,11)}
 		winning_players={}
 		winning_hands ={}
@@ -144,10 +166,19 @@ def poker_room(current_session_id, player_id):
 	current_player.stack_size = int(current_player.stack_size)
 	results['player'] = current_player
 	results['session'] = current_session
+	# results['other_hole_cards'] = [None,[('2', 'hearts'), ('2', 'hearts')],
+	# [('2', 'hearts'), ('2', 'hearts')],
+	# [('2', 'hearts'), ('2', 'hearts')],
+	# [('2', 'hearts'), ('2', 'hearts')],
+	# [('2', 'hearts'), ('2', 'hearts')],
+	# [('2', 'hearts'), ('2', 'hearts')],
+	# [('2', 'hearts'), ('2', 'hearts')],
+	# [('2', 'hearts'), ('2', 'hearts')],
+	# [('2', 'hearts'), ('2', 'hearts')],
+	# [('2', 'hearts'), ('2', 'hearts')]]
+	results['other_hole_cards'] = [[]*10]
 
 	return render_template('poker-session.html', results=results)
-
-
 
 	
 @app.route('/<current_session_id>/<admin_id>/add-player/', methods=['POST'])
@@ -243,7 +274,6 @@ def bet(current_session_id, player_id, bet_size):
 	return 'Success.'
 
 
-
 @app.route('/<current_session_id>/<player_id>/fold/', methods=['POST'])
 def fold(current_session_id, player_id):
 	player_id = int(player_id)
@@ -322,6 +352,7 @@ def call(current_session_id, player_id):
 
 	return 'Success.'
 
+
 @app.route('/<current_session_id>/<player_id>/<raise_size>/raise/', methods=['POST'])
 def player_raise(current_session_id, player_id, raise_size):
 	player_id = int(player_id)
@@ -355,6 +386,7 @@ def player_raise(current_session_id, player_id, raise_size):
 
 	return 'Success.'
 
+
 @app.route('/<current_session_id>/<player_id>/check/', methods=['POST'])
 def check(current_session_id, player_id):
 	player_id = int(player_id)
@@ -370,10 +402,6 @@ def check(current_session_id, player_id):
 		clean_up(current_session_id, seat_num, current_game_state, current_session)
 
 	return 'Success.'
-
-
-
-	
 
 
 @app.route('/<current_session_id>/<player_id>/all-in/', methods=['POST'])
@@ -413,9 +441,8 @@ def all_in(current_session_id, player_id):
 	return 'Success.'
 
 
-
-@app.route('/<current_session_id>/start-new-hand/')
-def make_new_hand(current_session_id, seat_num):
+@app.route('/<current_session_id>/<player_id>/start-new-hand/')
+def make_new_hand(current_session_id, player_id, seat_num):
 	 #move button and start new hand
 
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
@@ -471,6 +498,69 @@ def show_cards(current_session_id, seat_num):
 	return 'Success.'
 
 
+###################################################
+#												  #
+#                 Socket Routes                   #
+#												  #
+###################################################
+
+# @sockets.route('/submit')
+# def inbox(ws):
+#     """Receives incoming chat messages, inserts them into Redis."""
+#     while not ws.closed:
+#         # Sleep to prevent *constant* context-switches.
+#         gevent.sleep(0.1)
+#         message = ws.receive()
+
+#         if message:
+#             app.logger.info(u'Inserting message: {}'.format(message))
+#             redis.publish(REDIS_CHAN, message)
+
+
+# @sockets.route('/receive')
+# def outbox(ws):
+#     """Sends outgoing chat messages, via `ChatBackend`."""
+#     chats.register(ws)
+
+#     while not ws.closed:
+#         # Context switch while `ChatBackend.start` is running in the background.
+#         gevent.sleep(0.1)
+
+
+###################################################
+#												  #
+#                 Helper Functions                #
+#												  #
+###################################################
+
+def game_and_session_info(current_session):
+	if current_session.poker_hand:
+		game_state = current_session.poker_hand.game_state
+		results = get_game_state_dict(current_session.id)
+		if game_state.street != 0:
+			results['board'] = [card.get_string_tuple() for card in game_state.board][:(2+game_state.street)]
+		else:
+			results['board'] = []
+		results['currently_playing_seats'] = {i : False for i in range(1,11)}
+		for player in current_session.players:
+			results['currently_playing_seats'][player.seat_num] = \
+			player.seat_num in [x.seat_num for x in game_state.player_list]
+			
+	else:
+		results = {'board': []}
+		results['currently_playing_seats'] = {i : False for i in range(1,11)}
+
+	results['filled_seats'] = {i : False for i in range(1,11)}
+	
+	results['usernames'] = {}
+	results['stacks'] = {}
+	for player in current_session.players:
+		results['filled_seats'][player.seat_num] = True
+		results['usernames'][player.seat_num] = player.username
+		results['stacks'][player.seat_num] = player.stack_size
+
+	return results
+
 
 def make_new_game_state(current_session_id, new_button_position, small_blind):
 
@@ -509,6 +599,64 @@ def make_new_game_state(current_session_id, new_button_position, small_blind):
 	db.session.commit()
 
 	return new_game_state
+
+
+def get_game_state_dict(current_session_id):
+
+	current_session = PokerSession.query.filter_by(id = current_session_id).first()
+	if current_session.poker_hand:
+		current_hand = current_session.poker_hand
+		current_game_state = current_hand.game_state
+	admin_seat = Player.query.filter_by(poker_session_id = current_session_id, is_admin = True).first().seat_num
+	
+	player_names = {}
+	can_bet = {}
+	can_raise = {}
+	can_call = {}
+	current_bets = {}
+	stack_sizes = {}
+	folded_players = {}
+	min_raises = {}
+	showing_players = {}
+
+
+	for player in current_game_state.player_list:
+
+		can_bet[player.seat_num] = current_game_state.can_bet(player)
+		can_raise[player.seat_num] = current_game_state.can_raise(player)
+		can_call[player.seat_num] = current_game_state.can_call(player)
+		current_bets[player.seat_num] = player.current_bet
+		stack_sizes[player.seat_num] = player.stack_size
+		folded_players[player.seat_num] = player.is_folded
+		min_raises[player.seat_num] = current_game_state.get_min_raise(player)
+		showing_players[player.seat_num] = player.is_showing
+
+
+	results = {}
+
+	#these keys correspond to single objects not other dictionaries
+	results['admin_seat'] = admin_seat
+	results['seat_to_act'] = current_game_state.player_to_act.seat_num
+	results['is_raising_allowed'] = current_game_state.raising_allowed
+	results['button_seat'] = current_game_state.button_position
+	results['total_pot'] = current_game_state.get_total_pot()
+	results['pause_for_street_end'] = current_game_state.pause_for_street_end
+	results['pause_for_hand_end'] = current_game_state.pause_for_hand_end
+
+
+	#these keys correspond to other dictionaries that are indexed
+	#by player seat
+	results['can_bet']= can_bet
+	results['can_raise'] = can_raise
+	results['can_call'] = can_call
+	results['current_bets'] = current_bets
+	results['stack_sizes'] = stack_sizes
+	results['folded_players'] = folded_players
+	results['min_raises'] = min_raises
+	results['showing_players'] = showing_players
+
+	return results
+
 
 def clean_up(current_session_id, seat_num, current_game_state, current_session):
 	#Check to see if action is closed or not given the input gamestate/session. Adjust gamestate accordingly.
@@ -607,62 +755,6 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session):
 
 		current_session.poker_hand.game_state = deepcopy(current_game_state)
 		db.session.commit()
-
-def get_game_state_dict(current_session_id):
-
-	current_session = PokerSession.query.filter_by(id = current_session_id).first()
-	if current_session.poker_hand:
-		current_hand = current_session.poker_hand
-		current_game_state = current_hand.game_state
-	admin_seat = Player.query.filter_by(poker_session_id = current_session_id, is_admin = True).first().seat_num
-	
-	player_names = {}
-	can_bet = {}
-	can_raise = {}
-	can_call = {}
-	current_bets = {}
-	stack_sizes = {}
-	folded_players = {}
-	min_raises = {}
-	showing_players = {}
-
-
-	for player in current_game_state.player_list:
-
-		can_bet[player.seat_num] = current_game_state.can_bet(player)
-		can_raise[player.seat_num] = current_game_state.can_raise(player)
-		can_call[player.seat_num] = current_game_state.can_call(player)
-		current_bets[player.seat_num] = player.current_bet
-		stack_sizes[player.seat_num] = player.stack_size
-		folded_players[player.seat_num] = player.is_folded
-		min_raises[player.seat_num] = current_game_state.get_min_raise(player)
-		showing_players[player.seat_num] = player.is_showing
-
-
-	results = {}
-
-	#these keys correspond to single objects not other dictionaries
-	results['admin_seat'] = admin_seat
-	results['seat_to_act'] = current_game_state.player_to_act.seat_num
-	results['is_raising_allowed'] = current_game_state.raising_allowed
-	results['button_seat'] = current_game_state.button_position
-	results['total_pot'] = current_game_state.get_total_pot()
-	results['pause_for_street_end'] = current_game_state.pause_for_street_end
-	results['pause_for_hand_end'] = current_game_state.pause_for_hand_end
-
-
-	#these keys correspond to other dictionaries that are indexed
-	#by player seat
-	results['can_bet']= can_bet
-	results['can_raise'] = can_raise
-	results['can_call'] = can_call
-	results['current_bets'] = current_bets
-	results['stack_sizes'] = stack_sizes
-	results['folded_players'] = folded_players
-	results['min_raises'] = min_raises
-	results['showing_players'] = showing_players
-
-	return results
 
 
 if __name__ == '__main__':

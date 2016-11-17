@@ -30,15 +30,24 @@ function startNewHand(results) {
 	if(results['admin_seat'] === playerSeatNum) {
 		$.ajax({
 			url: "start-new-hand/",
-			type: "POST"
+			type: "POST",
+			success: function() {
+				console.log("END PAUSE");
+				$('.poker-table').find('.card-row').children().remove();
+				$('#hole-cards-row').children().remove();
+				$('.show-cards-row').children().remove();
+				$('.bet-info').remove();
+				pauseInProgress = false;
+			}
 		});
+	} else {
+		console.log("END PAUSE");
+		$('.poker-table').find('.card-row').children().remove();
+		$('#hole-cards-row').children().remove();
+		$('.show-cards-row').children().remove();
+		$('.bet-info').remove();
+		pauseInProgress = false;
 	}
-	console.log("END PAUSE");
-	$('.poker-table').find('.card-row').children().remove();
-	$('#hole-cards-row').children().remove();
-	$('.show-cards-row').children().remove();
-	$('.bet-info').remove();
-	pauseInProgress = false;
 }
 
 function animateValueChange(startVal, endVal, displayObject) {
@@ -189,13 +198,17 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 					}
 				}
 				// update showing cards
-				var showCardsRow = $( "#show-cards-row-" + visIdx );
-				var showCards = showCardsRow.find('.card');
-				for(var j=showCards.length; j < results.showing_cards[i].length; j++) {
-					var card = createCardDiv(results.showing_cards[i][j]);
-					console.log(results.showing_cards[i][j]);
-					console.log(results.showing_cards);
-					card.appendTo(showCardsRow);
+				if(results.hasOwnProperty('showing_cards')) {
+					var showCardsRow = $( "#show-cards-row-" + visIdx );
+					console.log(showCardsRow);
+					var showCards = showCardsRow.find('.card');
+					console.log(showCards);
+					for(var j=showCards.length; j < results.showing_cards[i].length; j++) {
+						var card = createCardDiv(results.showing_cards[i][j]);
+						console.log(results.showing_cards[i][j]);
+						console.log(results.showing_cards);
+						card.appendTo(showCardsRow);
+					}
 				}
 			} else {
 				if(seat.hasClass("occupied")) {

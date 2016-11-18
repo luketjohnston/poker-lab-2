@@ -1,11 +1,10 @@
 from flask import Flask, request, redirect, url_for, jsonify, render_template
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 import os
 import logging
 import redis
 import gevent
 from flask_sockets import Sockets
-from gamestate_backend import GamestateBackend
 
 app = Flask(__name__)
 app.config.from_object(os.environ['APP_SETTINGS'])
@@ -15,14 +14,11 @@ db = SQLAlchemy(app)
 # Set up jinja2 functionality
 app.jinja_env.add_extension('jinja2.ext.loopcontrols')
 # Set up redis
-# REDIS_URL = os.environ['REDIS_URL']
-# REDIS_CHAN = 'gamestate'
-# # set up sockets
-# sockets = Sockets(app)
-# redis = redis.from_url(REDIS_URL)
-# # Run GamestateBackend
-# gamestate_data = GamestateBackend(REDIS_CHAN)
-# gamestate_data.start()
+REDIS_URL = os.environ['REDIS_URL']
+REDIS_CHAN = 'gamestate'
+# set up sockets
+sockets = Sockets(app)
+redis = redis.from_url(REDIS_URL)
 
 
 from models import *
@@ -504,27 +500,73 @@ def show_cards(current_session_id, seat_num):
 #												  #
 ###################################################
 
-# @sockets.route('/submit')
-# def inbox(ws):
-#     """Receives incoming chat messages, inserts them into Redis."""
-#     while not ws.closed:
-#         # Sleep to prevent *constant* context-switches.
-#         gevent.sleep(0.1)
-#         message = ws.receive()
+class GamestateBackend():
+	"""Interface for registering and updating WebSocket clients."""
 
-#         if message:
-#             app.logger.info(u'Inserting message: {}'.format(message))
-#             redis.publish(REDIS_CHAN, message)
+	def __init__(self):
+		self.clients = list()
+		self.pubsub = redis.pubsub()
+		self.pubsub.subscribe(REDIS_CHAN)
 
 
-# @sockets.route('/receive')
-# def outbox(ws):
-#     """Sends outgoing chat messages, via `ChatBackend`."""
-#     chats.register(ws)
+	def __iter_data(self):
+		for message in self.pubsub.listen():
+			data = message.get('data')
+			if message['type'] == 'message':
+				app.logger.info(u'Sending message: {}'.format(data))
+				yield data
 
-#     while not ws.closed:
-#         # Context switch while `ChatBackend.start` is running in the background.
-#         gevent.sleep(0.1)
+
+	def register(self, client):
+		"""Register a WebSocket connection for Redis updates."""
+		self.clients.append(client)
+
+
+	def send(self, client, data):
+		"""Send given data to the registered client.
+		Automatically discards invalid connections."""
+		try:
+			client.send(data)
+		except Exception:
+			self.clients.remove(client)
+
+
+	def run(self):
+		"""Listens for new messages in Redis, and sends them to clients."""
+		for data in self.__iter_data():
+			for client in self.clients:
+				gevent.spawn(self.send, client, data)
+
+
+	def start(self):
+		"""Maintains Redis subscription in the background."""
+		gevent.spawn(self.run)
+
+gamestate = GamestateBackend()
+gamestate.start()
+
+
+@sockets.route('/submit')
+def inbox(ws):
+    """Receives incoming chat messages, inserts them into Redis."""
+    while not ws.closed:
+        # Sleep to prevent *contstant* context-switches.
+        gevent.sleep(0.1)
+        message = ws.receive()
+
+        if message:
+            # app.logger.info(u'Inserting message: {}'.format(message))
+            redis.publish(REDIS_CHAN, message)
+
+
+@sockets.route('/receive')
+def outbox(ws):
+    """Sends outgoing chat messages, via `ChatBackend`."""
+    gamestate.register(ws)
+
+    while not ws.closed:
+        # Context switch while `ChatBackend.start` is running in the background.
+        gevent.sleep(0.1)
 
 
 ###################################################

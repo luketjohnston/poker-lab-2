@@ -1,3 +1,19 @@
+import os
+import logging
+import redis
+import gevent
+from flask import Flask, render_template
+from flask_sockets import Sockets
+
+REDIS_URL = os.environ['REDIS_URL']
+REDIS_CHAN = 'gamestate'
+# set up sockets
+sockets = Sockets(app)
+# redis = redis.from_url(REDIS_URL)
+# Run GamestateBackend
+gamestate_data = GamestateBackend(REDIS_CHAN)
+gamestate_data.start()
+
 class GamestateBackend(object):
 	"""Interface for registering and updating WebSocket clients."""
 
@@ -31,3 +47,7 @@ class GamestateBackend(object):
 	def start(self):
 		"""Maintains Redis subscription in the background."""
 		gevent.spawn(self.run)
+
+
+gamestate = GamestateBackend()
+gamestate.start()

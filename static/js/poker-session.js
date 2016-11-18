@@ -57,7 +57,7 @@ function animateValueChange(startVal, endVal, displayObject) {
 			countDirection = -1;
 		}
 		$({countNum: startVal}).animate({countNum: endVal - countDirection}, {
-  			duration: 1000,
+  			duration: 500,
   			easing:'linear',
   			step: function() {
     		// What todo on every count

@@ -5,6 +5,11 @@ html, body { height: 100%; width: 100%; margin: 0; }
     src: url(../fonts/GothamRoundedBook_21018.ttf);
 }
 
+#chat-text {
+  overflow: auto;
+  height: 500px;
+}
+
 /*salmon: FF724F*/
 /*cream: FEFAE0*/
 /*dark grey: 231F20*/
@@ -638,6 +643,7 @@ body {
 	margin-bottom: 5px;
 	flex: 1;
 	max-height: 32px;
+	min-height: 32px;
 	transition: background-color 0.3s ease;
 }
 

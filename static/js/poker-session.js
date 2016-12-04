@@ -1,6 +1,27 @@
-window.setInterval(function(){
-  retrieveGamestate();
-}, 5000);
+// Support TLS-specific URLs, when appropriate.
+if (window.location.protocol == "https:") {
+  var ws_scheme = "wss://";
+} else {
+  var ws_scheme = "ws://"
+};
+
+
+var inbox = new ReconnectingWebSocket(ws_scheme + location.host + "/receive");
+var outbox = new ReconnectingWebSocket(ws_scheme + location.host + "/submit");
+var gamestate = {};
+
+inbox.onmessage = function(message) {
+  var data = JSON.parse(message.data);
+  gamestate = data;
+  if(data['pause_for_hand_end']) {
+  	console.log("BEGIN PAUSE");
+	pauseInProgress = true;
+	window.setTimeout(function() {startNewHand(data);}, 5000);
+  } else {
+  	updateDisplay(data);
+  }
+};
+
 
 var pauseInProgress = false;
 
@@ -15,9 +36,7 @@ function retrieveGamestate() {
 			}
 			console.log(pauseInProgress);
 			if(data['pause_for_hand_end'] && !pauseInProgress) {
-				console.log("BEGIN PAUSE");
-				pauseInProgress = true;
-				window.setTimeout(function() {startNewHand(data);}, 20000);
+				
 			} else {
 				updateDisplay(data);
 			}
@@ -27,26 +46,24 @@ function retrieveGamestate() {
 
 function startNewHand(results) {
 	var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
+	console.log("END PAUSE");
 	if(results['admin_seat'] === playerSeatNum) {
-		$.ajax({
-			url: "start-new-hand/",
-			type: "POST",
-			success: function() {
-				console.log("END PAUSE");
-				$('.poker-table').find('.card-row').children().remove();
-				$('#hole-cards-row').children().remove();
-				$('.show-cards-row').children().remove();
-				$('.bet-info').remove();
-				pauseInProgress = false;
-			}
-		});
-	} else {
-		console.log("END PAUSE");
+		var pathname = window.location.pathname;
+		var pathParts = pathname.split( '/' );
+		var sessionID = pathParts[1];
+		var userID = pathParts[2];
+		outbox.send(JSON.stringify({ 	func: 'make-new-hand', 
+										session_id: sessionID, 
+										user_id: userID,}));
 		$('.poker-table').find('.card-row').children().remove();
 		$('#hole-cards-row').children().remove();
 		$('.show-cards-row').children().remove();
 		$('.bet-info').remove();
-		pauseInProgress = false;
+	} else {
+		$('.poker-table').find('.card-row').children().remove();
+		$('#hole-cards-row').children().remove();
+		$('.show-cards-row').children().remove();
+		$('.bet-info').remove();
 	}
 }
 
@@ -200,13 +217,9 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 				// update showing cards
 				if(results.hasOwnProperty('showing_cards')) {
 					var showCardsRow = $( "#show-cards-row-" + visIdx );
-					console.log(showCardsRow);
 					var showCards = showCardsRow.find('.card');
-					console.log(showCards);
 					for(var j=showCards.length; j < results.showing_cards[i].length; j++) {
 						var card = createCardDiv(results.showing_cards[i][j]);
-						console.log(results.showing_cards[i][j]);
-						console.log(results.showing_cards);
 						card.appendTo(showCardsRow);
 					}
 				}
@@ -580,20 +593,22 @@ function dealHand() {
 	var pathname = window.location.pathname;
 	var pathParts = pathname.split( '/' );
 	var sessionID = pathParts[1];
-	var target = "/" + sessionID + "/deal-hand/";
-	$.ajax({
-		url: target,
-		type: "POST"
-	});
-	$( '.start-button' ).hide();
+	var userID = pathParts[2];
+	outbox.send(JSON.stringify({ 	func: 'deal-hand',
+										user_id: userID, 
+										session_id: sessionID}));
+	$('.start-button').hide();
 }
 
 
 function check() {
-	$.ajax({
-		url: "check/",
-		type: "POST"
-	});
+	var pathname = window.location.pathname;
+	var pathParts = pathname.split( '/' );
+	var sessionID = pathParts[1];
+	var userID = pathParts[2];
+	outbox.send(JSON.stringify({ 	func: 'check',
+									user_id: userID, 
+									session_id: sessionID}));
 }
 
 
@@ -604,11 +619,14 @@ function bet() {
 	console.log('Stack: ' + stackAmount);
 	if(betAmount < stackAmount) {
 		console.log('Good bet: ' + betAmount);
-		var betUrl = betAmount + '/bet/';
-		$.ajax({
-			url: betUrl,
-			type: "POST"
-		});
+		var pathname = window.location.pathname;
+		var pathParts = pathname.split( '/' );
+		var sessionID = pathParts[1];
+		var userID = pathParts[2];
+		outbox.send(JSON.stringify({ 	func: 'bet',
+										user_id: userID, 
+										session_id: sessionID,
+										bet_amount: betAmount}));
 	} else if(betAmount === stackAmount) {
 		allIn();
 	} else {
@@ -618,10 +636,13 @@ function bet() {
 
 
 function call() {
-	$.ajax({
-		url: "call/",
-		type: "POST"
-	});
+	var pathname = window.location.pathname;
+	var pathParts = pathname.split( '/' );
+	var sessionID = pathParts[1];
+	var userID = pathParts[2];
+	outbox.send(JSON.stringify({ 	func: 'call',
+										user_id: userID, 
+										session_id: sessionID}));
 }
 
 
@@ -637,11 +658,14 @@ function raise() {
 	console.log('Current Bet: ' + currentBet);
 	if(raiseAmount < (stackAmount + currentBet)) {
 		console.log('Good raise: ' + raiseAmount);
-		var betUrl = raiseAmount + '/raise/';
-		$.ajax({
-			url: betUrl,
-			type: "POST"
-		});
+		var pathname = window.location.pathname;
+		var pathParts = pathname.split( '/' );
+		var sessionID = pathParts[1];
+		var userID = pathParts[2];
+		outbox.send(JSON.stringify({ 	func: 'raise',
+										user_id: userID, 
+										session_id: sessionID,
+										raise_amount: raiseAmount}));
 	} else if(raiseAmount === (stackAmount + currentBet)) {
 		allIn();
 	} else {
@@ -649,20 +673,29 @@ function raise() {
 	}
 }
 
+
 function allIn() {
 	console.log('All in');
-	$.ajax({
-		url: "all-in/",
-		type: "POST"
-	});
+	var pathname = window.location.pathname;
+	var pathParts = pathname.split( '/' );
+	var sessionID = pathParts[1];
+	var userID = pathParts[2];
+	outbox.send(JSON.stringify({ 	func: 'all-in',
+									user_id: userID, 
+									session_id: sessionID}));
 }
 
+
 function fold() {
-	$.ajax({
-		url: "fold/",
-		type: "POST"
-	});
+	var pathname = window.location.pathname;
+	var pathParts = pathname.split( '/' );
+	var sessionID = pathParts[1];
+	var userID = pathParts[2];
+	outbox.send(JSON.stringify({ 	func: 'fold',
+									user_id: userID, 
+									session_id: sessionID}));
 }
+
 
 function addPlayer(seat_num) {
 	swal.withForm({   
@@ -679,13 +712,16 @@ function addPlayer(seat_num) {
 	}, 
 	function(isConfirm) {
 		if (isConfirm) {
-			email = this.swalForm.name;
-			$.ajax({
-				url : "add-player/",
-				type: "POST",
-				data : JSON.stringify({email:email, seat_num:seat_num}, null, '\t'),
-				contentType: 'application/json;charset=UTF-8',
-			});
+			var email = this.swalForm.name;
+			var pathname = window.location.pathname;
+			var pathParts = pathname.split( '/' );
+			var sessionID = pathParts[1];
+			var userID = pathParts[2];
+			outbox.send(JSON.stringify({ 	func: 'add-player', 
+											session_id: sessionID, 
+											user_id: userID, 
+											email: email,
+											seat_num: seat_num}));
 			setTimeout(function(){ 
 				swal({
 					title: "Invite sent to " + email + "!",

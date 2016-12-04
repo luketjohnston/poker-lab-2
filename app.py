@@ -1,5 +1,6 @@
 from flask import Flask, request, redirect, url_for, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
+import json
 import os
 import logging
 import redis
@@ -101,7 +102,7 @@ def show_gamestate(current_session_id):
 			current_game_state.street) 
 
 
-@app.route('/<current_session_id>/<player_id>/retrieve-gamestate/', methods=['GET'])
+
 def retrieve_gamestate(current_session_id, player_id):
 
 	#retrieve the current session
@@ -139,7 +140,7 @@ def retrieve_gamestate(current_session_id, player_id):
 	else:
 		results['hole_cards'] = []
 
-	return jsonify(results)
+	return json.dumps(results)
 
 
 @app.route('/<current_session_id>/<player_id>/')
@@ -176,8 +177,8 @@ def poker_room(current_session_id, player_id):
 	return render_template('poker-session.html', results=results)
 
 	
-@app.route('/<current_session_id>/<admin_id>/add-player/', methods=['POST'])
-def add_player(current_session_id, admin_id):
+# @app.route('/<current_session_id>/<admin_id>/add-player/', methods=['POST'])
+def add_player(current_session_id, admin_id, email, seat_num):
 
 	json_data = request.json
 
@@ -185,18 +186,18 @@ def add_player(current_session_id, admin_id):
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
 
 	#add a player to the this session
-	new_player = Player(username = json_data['email'], 
-		email = json_data['email'], 
-		seat_num = json_data['seat_num'],
+	new_player = Player(username = email, 
+		email = email, 
+		seat_num = seat_num,
 		stack_size=current_session.max_buy_in)
 	current_session.players.append(new_player)
 
 	db.session.commit()
-	return 'Success.'
+	# return 'Success.'
 
 
 
-@app.route('/<current_session_id>/deal-hand/', methods=['POST'])
+# @app.route('/<current_session_id>/deal-hand/', methods=['POST'])
 def deal_hand(current_session_id):
 
 	#retrieve current session and number of players
@@ -223,7 +224,7 @@ def deal_hand(current_session_id):
 	return 'Success.'
 
 
-@app.route('/<current_session_id>/<player_id>/<bet_size>/bet/', methods=['POST'])
+# @app.route('/<current_session_id>/<player_id>/<bet_size>/bet/', methods=['POST'])
 def bet(current_session_id, player_id, bet_size):
 
 
@@ -269,7 +270,7 @@ def bet(current_session_id, player_id, bet_size):
 	return 'Success.'
 
 
-@app.route('/<current_session_id>/<player_id>/fold/', methods=['POST'])
+# @app.route('/<current_session_id>/<player_id>/fold/', methods=['POST'])
 def fold(current_session_id, player_id):
 	player_id = int(player_id)
 
@@ -304,7 +305,7 @@ def fold(current_session_id, player_id):
 	return 'Success.'
 
 
-@app.route('/<current_session_id>/<player_id>/call/', methods=['POST'])
+# @app.route('/<current_session_id>/<player_id>/call/', methods=['POST'])
 def call(current_session_id, player_id):
 	player_id = int(player_id) 
 
@@ -348,7 +349,7 @@ def call(current_session_id, player_id):
 	return 'Success.'
 
 
-@app.route('/<current_session_id>/<player_id>/<raise_size>/raise/', methods=['POST'])
+# @app.route('/<current_session_id>/<player_id>/<raise_size>/raise/', methods=['POST'])
 def player_raise(current_session_id, player_id, raise_size):
 	player_id = int(player_id)
 	raise_size = float(raise_size)
@@ -382,7 +383,7 @@ def player_raise(current_session_id, player_id, raise_size):
 	return 'Success.'
 
 
-@app.route('/<current_session_id>/<player_id>/check/', methods=['POST'])
+# @app.route('/<current_session_id>/<player_id>/check/', methods=['POST'])
 def check(current_session_id, player_id):
 	player_id = int(player_id)
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
@@ -399,7 +400,7 @@ def check(current_session_id, player_id):
 	return 'Success.'
 
 
-@app.route('/<current_session_id>/<player_id>/all-in/', methods=['POST'])
+# @app.route('/<current_session_id>/<player_id>/all-in/', methods=['POST'])
 def all_in(current_session_id, player_id):
 
 	player_id = int(player_id)
@@ -437,7 +438,6 @@ def all_in(current_session_id, player_id):
 
 
 
-@app.route('/<current_session_id>/<player_id>/start-new-hand/', methods=['POST'])
 def make_new_hand(current_session_id, player_id):
 	 #move button and start new hand
 
@@ -457,11 +457,10 @@ def make_new_hand(current_session_id, player_id):
 	db.session.add(new_hand)
 	db.session.commit()
 
-
 	return 'Success.'
 
 
-@app.route('/<current_session_id>/<seat_num>/continue-playing/')
+# @app.route('/<current_session_id>/<seat_num>/continue-playing/')
 def continue_playing(current_session_id, seat_num):
 	 #move button and start new hand
 
@@ -472,7 +471,6 @@ def continue_playing(current_session_id, seat_num):
 	current_game_state.pause_for_street_end = False
 
 	current_session.poker_hand.game_state = deepcopy(current_game_state)
-
 
 	return 'Success.'
 
@@ -548,18 +546,82 @@ gamestate.start()
 
 @sockets.route('/submit')
 def inbox(ws):
-    """Receives incoming chat messages, inserts them into Redis."""
+	"""Receives incoming chat messages, inserts them into Redis."""
 	while not ws.closed:
 		# Sleep to prevent *contstant* context-switches.
 		gevent.sleep(0.1)
 		message = ws.receive()
+		app.logger.info(u'Received message: {}'.format(message))
+		message = json.loads(message)
+		app.logger.info(u'Inserting message: {}'.format(message))
+		if message['func'] == 'add-player':
+			add_player(message['session_id'], message['user_id'], 
+				message['email'], message['seat_num'])
+			gs = retrieve_gamestate(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'deal-hand':
+			deal_hand(message['session_id'])
+			gs = retrieve_gamestate(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'check':
+			check(message['session_id'], message['user_id'])
+			gs = retrieve_gamestate(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'call':
+			call(message['session_id'], message['user_id'])
+			gs = retrieve_gamestate(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'bet':
+			bet(message['session_id'], message['user_id'],
+				message['bet_amount'])
+			gs = retrieve_gamestate(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'raise':
+			player_raise(message['session_id'], message['user_id'],
+				message['raise_amount'])
+			gs = retrieve_gamestate(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'all-in':
+			all_in(message['session_id'], message['user_id'])
+			gs = retrieve_gamestate(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'fold':
+			fold(message['session_id'], message['user_id'])
+			gs = retrieve_gamestate(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'make-new-hand':
+			make_new_hand(message['session_id'], message['user_id'])
+			gs = retrieve_gamestate(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
 
-		if message:
-			# app.logger.info(u'Inserting message: {}'.format(message))
-			redis.publish(REDIS_CHAN, message)
+		
+		if gs:
+			app.logger.info(u'Inserting message: {}'.format(message))
+			redis.publish(REDIS_CHAN, gs)
 
 
-@sockets.route('/<current_session_id>/<player_id>/<bet_size>/bet/')
+
+
+
+
+
+
+@sockets.route('/receive')
+def outbox(ws):
+    """Sends outgoing chat messages, via `ChatBackend`."""
+    gamestate.register(ws)
+
+    while not ws.closed:
+        # Context switch while `ChatBackend.start` is running in the background.
+        gevent.sleep(0.1)
+
+
+###################################################
+#												  #
+#                 Helper Functions                #
+#												  #
+###################################################
+
 def bet(current_session_id, player_id, bet_size):
 
 
@@ -603,26 +665,6 @@ def bet(current_session_id, player_id, bet_size):
 		db.session.commit()
 
 	return 'Success.'
-
-
-
-
-
-@sockets.route('/receive')
-def outbox(ws):
-    """Sends outgoing chat messages, via `ChatBackend`."""
-    gamestate.register(ws)
-
-    while not ws.closed:
-        # Context switch while `ChatBackend.start` is running in the background.
-        gevent.sleep(0.1)
-
-
-###################################################
-#												  #
-#                 Helper Functions                #
-#												  #
-###################################################
 
 def game_and_session_info(current_session):
 	if current_session.poker_hand:

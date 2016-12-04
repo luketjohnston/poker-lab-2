@@ -15,7 +15,9 @@ inbox.onmessage = function(message) {
   gamestate = data;
   if(data['pause_for_hand_end']) {
   	console.log("BEGIN PAUSE");
+  	console.log(data['showing_cards']);
 	pauseInProgress = true;
+	updateDisplay(data);
 	window.setTimeout(function() {startNewHand(data);}, 5000);
   } else {
   	updateDisplay(data);

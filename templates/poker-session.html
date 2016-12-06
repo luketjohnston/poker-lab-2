@@ -103,7 +103,7 @@
                 </div>
                 <div class="flex-row" id="hole-cards-row">
                     {% if results['currently_playing_seats'][results['player'].seat_num] %}
-                        {% for card in results['hole_cards'] %}
+                        {% for card in results['hole_cards'][results['player'].seat_num] %}
                             {% include 'card.html' %}
                         {% endfor %}
                     {% endif %}

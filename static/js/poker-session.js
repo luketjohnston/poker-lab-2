@@ -393,8 +393,8 @@ function updateDisplay(results) {
 	// Update this player's hole cards
 	var holeCardsRow = $( "#hole-cards-row" );
 	var holeCards = holeCardsRow.find('.card');
-	for(var i=holeCards.length; i < results.hole_cards.length; i++) {
-		var card = createCardDiv(results.hole_cards[i]);
+	for(var i=holeCards.length; i < results.hole_cards[playerSeatNum].length; i++) {
+		var card = createCardDiv(results.hole_cards[playerSeatNum][i]);
 		card.appendTo(holeCardsRow);
 	}
 	// Update this player's dash information

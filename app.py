@@ -134,12 +134,6 @@ def retrieve_gamestate(current_session_id, player_id):
 		results['winning_hands'] = winning_hands
 		results['pot_sizes'] = pot_sizes
 
-	if results['currently_playing_seats'][current_player.seat_num]:
-		results['hole_cards'] = [card.get_string_tuple() for card in \
-			current_game_state.get_player_at_seat(current_player.seat_num).hole_cards]
-	else:
-		results['hole_cards'] = []
-
 	return json.dumps(results)
 
 
@@ -154,10 +148,10 @@ def poker_room(current_session_id, player_id):
 		id = player_id).first()
 
 	results = game_and_session_info(current_session)
-	if results['currently_playing_seats'][current_player.seat_num]:
-		game_state = current_session.poker_hand.game_state
-		results['hole_cards'] = [card.get_string_tuple() for card in \
-			game_state.get_player_at_seat(current_player.seat_num).hole_cards]
+	# if results['currently_playing_seats'][current_player.seat_num]:
+	# 	game_state = current_session.poker_hand.game_state
+	# 	results['hole_cards'] = [card.get_string_tuple() for card in \
+	# 		game_state.get_player_at_seat(current_player.seat_num).hole_cards]
 
 	current_player.stack_size = int(current_player.stack_size)
 	results['player'] = current_player
@@ -172,7 +166,7 @@ def poker_room(current_session_id, player_id):
 	# [('2', 'hearts'), ('2', 'hearts')],
 	# [('2', 'hearts'), ('2', 'hearts')],
 	# [('2', 'hearts'), ('2', 'hearts')]]
-	results['other_hole_cards'] = [[]*10]
+	# results['other_hole_cards'] = [[]*10]
 
 	return render_template('poker-session.html', results=results)
 
@@ -691,6 +685,16 @@ def game_and_session_info(current_session):
 		results['filled_seats'][player.seat_num] = True
 		results['usernames'][player.seat_num] = player.username
 		results['stacks'][player.seat_num] = player.stack_size
+
+	results['hole_cards'] = dict()
+	# for all seats
+	for seat_num in results['currently_playing_seats']:
+		# if that seat number is currently playing
+		if results['currently_playing_seats'][seat_num]:
+			results['hole_cards'][seat_num] = [card.get_string_tuple() for card in \
+				game_state.get_player_at_seat(seat_num).hole_cards]
+		else:
+			results['hole_cards'][seat_num] = []
 
 	return results
 

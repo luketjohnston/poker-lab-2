@@ -84,6 +84,10 @@
                         <div class="start-button" onclick="dealHand()">Deal 'Em, Cowboy!</div>
                     {% endif %}
                 </div>
+                <div class="street-pot-info flex-row">
+                    <img src="{{ url_for('static', filename = 'img/bet-icon.png') }}" style="height: 30px;">
+                    <div class="stack-num">10000</div>
+                </div>
             </div>
         </div>
         <div class="col-xs-5 col-centered player-dash {% if results['seat_to_act'] == results['player'].seat_num %}action-on {% endif %}">

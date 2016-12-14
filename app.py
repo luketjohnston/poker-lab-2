@@ -43,16 +43,12 @@ def index():
 def create_session():
 
 	new_admin_player = Player(username = request.form['username'].lower(),
-		seat_num = 5, 
+		seat_num = 1, 
 		has_button = False, 
 		is_admin = True,
 		stack_size = float(request.form['player-stack']))
 
 	#create dummy player for testing purposes
-	dummy_player = Player(username = 'aaron', 
-		seat_num = 9, 
-		has_button = False, 
-		stack_size = float(request.form['player-stack']))
 
 	#create new session
 	small_blind = float(request.form['small-blind'])
@@ -60,13 +56,12 @@ def create_session():
 		small_blind = small_blind, big_blind = 2*small_blind, 
 		max_buy_in = float(request.form['max-buy-in']))
 	#add admin to the session
-	new_session.players = [new_admin_player, dummy_player]
+	new_session.players = [new_admin_player]
 	new_admin_player.poker_session = new_session
 
 
 	db.session.add(new_session)
 	db.session.add(new_admin_player)
-	db.session.add(dummy_player)
 	db.session.commit()
 
 	return redirect(url_for('poker_room', current_session_id=new_session.id,
@@ -135,6 +130,36 @@ def retrieve_gamestate(current_session_id, player_id):
 		results['pot_sizes'] = pot_sizes
 
 	return json.dumps(results)
+
+@app.route('/<current_session_id>/<player_id>/full/')
+def full_hand(current_session_id, player_id):
+	#retrieve the current session
+	current_session = PokerSession.query.filter_by(
+		id = current_session_id).first()
+
+	current_player = Player.query.filter_by(
+		id = player_id).first()
+	results = dict()
+	results['player'] = current_player
+	results['session'] = current_session
+	results['current_bets'] = {i: 100 for i in range(1,11)}
+	results['currently_playing_seats'] = {i: True for i in range(1,11)}
+	results['filled_seats'] = {i: True for i in range(1,11)}
+	results['filled_seats'] = {i: True for i in range(1,11)}
+	results['usernames'] = {i: ''+chr(i+65) for i in range(1,11)}
+	results['stacks'] = {i: 1000 for i in range(1,11)}
+	results['hole_cards'] = {i: [('2', 'hearts'), ('2', 'hearts')] for i in range(1,11)}
+	results['can_bet'] = {i: False for i in range(1,11)}
+	results['can_call'] = {i: True for i in range(1,11)}
+	results['can_raise'] = {i: True for i in range(1,11)}
+	results['folded_players'] = {i: False for i in range(1,11)}
+	results['showing_cards'] = {i: [] for i in range(1,11)}
+	results['board'] = [('2', 'hearts')]*5
+	results['total_pot'] = 100
+
+
+	return render_template('poker-session.html', results=results)
+
 
 
 @app.route('/<current_session_id>/<player_id>/')

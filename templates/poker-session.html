@@ -84,6 +84,10 @@
                         <div class="start-button" onclick="dealHand()">Deal 'Em, Cowboy!</div>
                     {% endif %}
                 </div>
+                <div class="street-pot-info flex-row">
+                    <img src="{{ url_for('static', filename = 'img/bet-icon.png') }}" style="height: 30px;">
+                    <div class="stack-num">10000</div>
+                </div>
             </div>
         </div>
         <div class="col-xs-5 col-centered player-dash {% if results['seat_to_act'] == results['player'].seat_num %}action-on {% endif %}">
@@ -103,7 +107,7 @@
                 </div>
                 <div class="flex-row" id="hole-cards-row">
                     {% if results['currently_playing_seats'][results['player'].seat_num] %}
-                        {% for card in results['hole_cards'] %}
+                        {% for card in results['hole_cards'][results['player'].seat_num] %}
                             {% include 'card.html' %}
                         {% endfor %}
                     {% endif %}
@@ -149,6 +153,7 @@
     <script src="//code.jquery.com/jquery-2.2.1.min.js"></script>
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular.min.js"></script>
+    <script type="text/javascript" src="{{url_for('static', filename= 'js/reconnecting-websocket.js')}}"></script>
     <script src="{{url_for('static', filename= 'js/sweetalert.min.js')}}"></script>
     <script src="{{url_for('static', filename= 'js/swal-forms.js')}}"></script>
     <script src="{{url_for('static', filename= 'js/poker-session.js')}}"></script>

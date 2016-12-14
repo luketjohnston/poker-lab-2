@@ -376,9 +376,23 @@ body {
 	color: #FEFAE0;
 }
 
+.stack-num {
+	color: #FEFAE0;
+	font-size: 25px;
+}
+
+.street-pot-info {
+	background-color: #231F20;
+	padding: 5px 10px 0px 10px;
+	border-radius: 10px;
+	position: absolute;
+    top: 80%;
+    left: 20%;
+}
+
 #bet-info-0 {
 	position: absolute;
-    top: 75%;
+    top: 80%;
     right: 30%;
 }
 
@@ -614,6 +628,7 @@ body {
 
 .small-text {
 	font-size: 1.2em;
+	margin-bottom: -5px;
 }
 
 .dash-stack {

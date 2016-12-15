@@ -203,10 +203,9 @@ class GameState:
 
 		## need to set can_raise = True for big blind if everyone completes
 		
-
-		#check to see if player has enough money to call the largest bet
 		
 	def can_call(self, player):
+		#check to see if player has enough money to call the largest bet
 		max_current_bet = self.get_max_current_bet()
 		if player.stack_size + player.current_bet > max_current_bet:
 			return True
@@ -308,12 +307,12 @@ class GameState:
 		left_of_button = self.get_player_to_left(button_player)
 
 		if self.last_valid_raiser and (self.last_valid_raiser in self.get_unfolded_players()):
+
 			for players in players_in_pots:
-				players = sorted(players, key= lambda x: x.seat_num)
-				players = sorted(players, key = lambda x: (self.player_list.index(x) - (self.player_list.index(self.last_valid_raiser) +1)) % len(self.player_list))
+				players = sorted(players, key = lambda x: (self.player_list.index(x) - self.player_list.index(self.last_valid_raiser)) % len(self.player_list))
 				players[0].is_showing = True
 				for player1 in players:
-					players_to_compare = players[0:players.index(player1)]
+					players_to_compare = players[0:players.index(player1)+1]
 					for player2 in players:
 						if player2.is_showing:
 							players_to_compare.append(player2)
@@ -322,12 +321,11 @@ class GameState:
 
 		else:
 			for players in players_in_pots:
-				print(players)
-				players = sorted(players, key = lambda x: x.seat_num)
-				players = sorted(players, key = lambda x: (self.player_list.index(x) - (self.player_list.index(left_of_button) +1)) % len(self.player_list))
+
+				players = sorted(players, key = lambda x: (self.player_list.index(x) - self.player_list.index(left_of_button)) % len(self.player_list))
 				players[0].is_showing = True
 				for player1 in players:
-					players_to_compare = players[0:players.index(player1)]
+					players_to_compare = players[0:players.index(player1)+1]
 					for player2 in players:
 						if player2.is_showing:
 							players_to_compare.append(player2)

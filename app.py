@@ -202,6 +202,8 @@ def add_player(current_session_id, admin_id, email, seat_num):
 
 	json_data = request.json
 
+	app.logger.info(u'Sending message: Test')
+
 	#retrieve the current session
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
 
@@ -621,11 +623,6 @@ def inbox(ws):
 
 
 
-
-
-
-
-
 @sockets.route('/receive')
 def outbox(ws):
     """Sends outgoing chat messages, via `ChatBackend`."""
@@ -685,6 +682,7 @@ def bet(current_session_id, player_id, bet_size):
 		db.session.commit()
 
 	return 'Success.'
+
 
 def game_and_session_info(current_session):
 	if current_session.poker_hand:

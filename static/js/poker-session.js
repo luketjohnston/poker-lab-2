@@ -15,10 +15,9 @@ inbox.onmessage = function(message) {
   gamestate = data;
   if(data['pause_for_hand_end']) {
   	console.log("BEGIN PAUSE");
-  	console.log(data['showing_cards']);
 	pauseInProgress = true;
 	updateDisplay(data);
-	window.setTimeout(function() {startNewHand(data);}, 5000);
+	window.setTimeout(function() {startNewHand(data);}, 20000);
   } else {
   	updateDisplay(data);
   }
@@ -217,14 +216,19 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 					}
 				}
 				// update showing cards
-				console.log(results.hasOwnProperty('showing_cards'));
+				console.log('CARD INFO');
+				console.log(results['showing_cards']);
 				if(results.hasOwnProperty('showing_cards')) {
 					var showCardsRow = $( "#show-cards-row-" + visIdx );
+					console.log('showCardsRow');
 					console.log(showCardsRow);
 					var showCards = showCardsRow.find('.card');
-					console.log(showCards);
-					for(var j=showCards.length; j < results.showing_cards[i].length; j++) {
+					if(showCards.length !== 0) {
+						showCards.remove();
+					}
+					for(var j=0; j < results.showing_cards[i].length; j++) {
 						var card = createCardDiv(results.showing_cards[i][j]);
+						console.log('card');
 						console.log(card);
 						card.appendTo(showCardsRow);
 					}
@@ -397,7 +401,10 @@ function updateDisplay(results) {
 	// Update this player's hole cards
 	var holeCardsRow = $( "#hole-cards-row" );
 	var holeCards = holeCardsRow.find('.card');
-	for(var i=holeCards.length; i < results.hole_cards[playerSeatNum].length; i++) {
+	if(holeCards.length !== 0) {
+		holeCards.remove();
+	}
+	for(var i=0; i < results.hole_cards[playerSeatNum].length; i++) {
 		var card = createCardDiv(results.hole_cards[playerSeatNum][i]);
 		card.appendTo(holeCardsRow);
 	}

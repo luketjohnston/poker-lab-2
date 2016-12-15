@@ -201,8 +201,6 @@ def add_player(current_session_id, admin_id, email, seat_num):
 
 	json_data = request.json
 
-	app.logger.info(u'Sending message: Test')
-
 	#retrieve the current session
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
 
@@ -435,16 +433,13 @@ def all_in(current_session_id, player_id):
 
 	if current_player_object == current_game_state.player_to_act:
 
-		#if no one has raised yet, make this player the last valid raiser
+		#if this player has enough money to raise, make this player the last valid raiser
 		if current_game_state.can_raise(current_player_object) == True:
 			current_game_state.last_valid_raiser = current_player_object
-		elif current_game_state.get_unfolded_player_to_left(current_player_object) == current_game_state.last_valid_raiser:
-			current_game_state.raising_allowed = False
 
-		##See if the bet loop is being completed. The action may not be over yet, however, if there
-		##has been at least one invalid raise above the current valid raise
-		if current_game_state.get_unfolded_player_to_left(current_player_object) == current_game_state.last_valid_raiser and \
-			current_game_state.can_raise(current_player_object) == False:
+		#If the player does not have enough money to raise, check if he is closing the action. If true, then his all-in 
+		#will function as a call and close further raising.
+		elif current_game_state.get_unfolded_player_to_left(current_player_object) == current_game_state.last_valid_raiser:
 			current_game_state.raising_allowed = False
 
 		current_player_object.current_bet = current_player_object.current_bet + current_player_object.stack_size

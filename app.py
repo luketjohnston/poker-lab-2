@@ -20,6 +20,7 @@ REDIS_CHAN = 'gamestate'
 # set up sockets
 sockets = Sockets(app)
 redis = redis.from_url(REDIS_URL)
+print os.environ
 
 
 from models import *

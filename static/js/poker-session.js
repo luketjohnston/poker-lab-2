@@ -9,13 +9,17 @@ if (window.location.protocol == "https:") {
 var inbox = new ReconnectingWebSocket(ws_scheme + location.host + "/receive");
 var outbox = new ReconnectingWebSocket(ws_scheme + location.host + "/submit");
 var gamestate = {};
+var pause_in_session = false;
 
 inbox.onmessage = function(message) {
 	var data = JSON.parse(message.data);
 	gamestate_dict = data;
 	if(data['pause_for_hand_end']) {
+		pause_in_session = true;
 		console.log("BEGIN PAUSE");
 		updateDisplay(data);
+		$('#sit-out-button').addClass('disabled');
+		$('#sit-in-button').addClass('disabled');
 		window.setTimeout(function() {startNewHand(data);}, 20000);
 	} else {
 		updateDisplay(data);
@@ -27,6 +31,7 @@ inbox.onmessage = function(message) {
 
 function startNewHand(results) {
 	var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
+	pause_in_session = false;
 	console.log("END PAUSE");
 	if(results['admin_seat'] === playerSeatNum) {
 		var pathname = window.location.pathname;
@@ -36,12 +41,12 @@ function startNewHand(results) {
 		outbox.send(JSON.stringify({ 	func: 'make-new-hand', 
 										session_id: sessionID, 
 										user_id: userID,}));
-		$('.poker-table').find('.card-row').children().remove();
+		$('#board-row').children().remove();
 		$('#hole-cards-row').children().remove();
 		$('.show-cards-row').children().remove();
 		$('.bet-info').remove();
 	} else {
-		$('.poker-table').find('.card-row').children().remove();
+		$('#board-row').children().remove();
 		$('#hole-cards-row').children().remove();
 		$('.show-cards-row').children().remove();
 		$('.bet-info').remove();
@@ -111,9 +116,11 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 						text: results.usernames[i][0]
 					}).appendTo(seat);
 					// player byline
+					var addToStackString = "addToPlayerStack("+visIdx+")";
 					$('<div/>', {
 						class: "player-byline",
-						id: "byline-" + visIdx
+						id: "byline-" + visIdx,
+						onclick: addToStackString
 					}).appendTo(seat);
 					var byline = $( "#byline-" + visIdx );
 					// user name
@@ -195,26 +202,81 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 						seat.removeClass("folded");
 					}
 				}
+				var showBet = true;
 				// update showing cards
-				console.log('CARD INFO');
-				console.log(results['showing_cards']);
 				if(results.hasOwnProperty('showing_cards')) {
 					if(results.showing_cards.hasOwnProperty(i)) {
 						var showCardsRow = $( "#show-cards-row-" + visIdx );
-						console.log('showCardsRow');
-						console.log(showCardsRow);
-						var showCards = showCardsRow.find('.card');
+						var showCards = showCardsRow.children('.card');
 						if(showCards.length !== 0) {
 							showCards.remove();
 						}
 						for(var j=0; j < results.showing_cards[i].length; j++) {
 							var card = createCardDiv(results.showing_cards[i][j]);
-							console.log('card');
-							console.log(card);
 							card.appendTo(showCardsRow);
 						}
+						// In order to avoid crowding, don't show the bet if the player
+						// is also showing cards
+						showBet = false;
 					}
 				}
+				// update bets
+				// first check if there are any bets
+				if(showBet) {
+					if(results.hasOwnProperty('current_bets')) {
+						// only display the bets if this player is not
+						// currently showing their cards, otherwise the
+						// bets will obscure the cards
+						if(results.showing_cards[i] &&
+							results.showing_cards[i].length === 0) {
+						// if there are bets, check if this player has a bet
+							if(results.current_bets[i] > 0) {
+								var betString = results.current_bets[i];
+								if(betString >= 1000){
+									betString = betString.toFixed(0);
+								} else {
+									betString = betString.toFixed(2);
+								}
+								// if this player has a bet, check if there
+								// is a bet at this seat
+								var betInfo = $("#bet-info-" + visIdx);
+								
+								// if there is no bet displayed, add it
+								if(betInfo.length === 0) {
+									$('<div/>', {
+										class: 'bet-info',
+										id: 'bet-info-' + visIdx
+									}).appendTo(pokerTable);
+									betInfo = $("#bet-info-" + visIdx);
+									$('<img/>', {
+										src: '/static/img/bet-icon.png',
+										style: 'height: 25px;'
+									}).appendTo(betInfo);
+									$('<div/>', {
+										class: 'bet-num',
+										text: betString
+									}).appendTo(betInfo);
+
+								} else {
+									// if there is a bet displayed, update it
+									betInfo.find('.bet-num').text(betString);
+								}
+							} else {
+								// if this player doesn't have a bet, check
+								// if this seat has a bet on the table and
+								// remove it
+								if(pokerTable.has("#bet-info-" + visIdx).length !== 0) {
+									pokerTable.find("#bet-info-" + visIdx).remove();
+								}
+							}
+						}
+					} else {
+						// if there aren't any bets (because a hand
+						// hasn't started), remove bets on table
+						$( ".bet-info" ).remove();
+					}
+				}
+				
 			} else {
 				if(seat.hasClass("occupied")) {
 					seat.removeClass("occupied");
@@ -237,61 +299,10 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 	                	}).appendTo(seat);
 				}
 			}
-			// update bets
-			// first check if there are any bets
-			if(results.hasOwnProperty('current_bets')) {
-				// only display the bets if this player is not
-				// currently showing their cards, otherwise the
-				// bets will obscure the cards
-				if(results.showing_cards[i] &&
-					results.showing_cards[i].length === 0) {
-				// if there are bets, check if this player has a bet
-					if(results.current_bets[i] > 0) {
-						var betString = results.current_bets[i];
-						if(betString >= 1000){
-							betString = betString.toFixed(0);
-						} else {
-							betString = betString.toFixed(2);
-						}
-						// if this player has a bet, check if there
-						// is a bet at this seat
-						var betInfo = $("#bet-info-" + visIdx);
-						
-						// if there is no bet displayed, add it
-						if(betInfo.length === 0) {
-							$('<div/>', {
-								class: 'bet-info',
-								id: 'bet-info-' + visIdx
-							}).appendTo(pokerTable);
-							betInfo = $("#bet-info-" + visIdx);
-							$('<img/>', {
-								src: '/static/img/bet-icon.png',
-								style: 'height: 25px;'
-							}).appendTo(betInfo);
-							$('<div/>', {
-								class: 'bet-num',
-								text: betString
-							}).appendTo(betInfo);
-
-						} else {
-							// if there is a bet displayed, update it
-							betInfo.find('.bet-num').text(betString);
-						}
-					} else {
-						// if this player doesn't have a bet, check
-						// if this seat has a bet on the table and
-						// remove it
-						if(pokerTable.has("#bet-info-" + visIdx).length !== 0) {
-							pokerTable.find("#bet-info-" + visIdx).remove();
-						}
-					}
-				}
-			} else {
-				// if there aren't any bets (because a hand
-				// hasn't started), remove bets on table
-				$( ".bet-info" ).remove();
-			}
+			
 		} else {
+			// if this player has a bet, check if there
+			// is a bet at this seat
 			if(results.currently_playing_seats[i] && 
 				results.current_bets[i] > 0) {
 				var betString = results.current_bets[i];
@@ -300,8 +311,7 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 				} else {
 					betString = betString.toFixed(2);
 				}
-				// if this player has a bet, check if there
-				// is a bet at this seat
+				
 				var betInfo = $("#bet-info-" + visIdx);
 				
 				// if there is no bet displayed, add it
@@ -375,10 +385,13 @@ function updateDisplay(results) {
 	updateSeatInfo(results, playerSeatNum, pokerTable);
 
 	// Update the board cards
-	var boardCards = pokerTable.find('.card');
+	var boardCards = $('#board-row').children('.card');
+	console.log(boardCards);
+	console.log('BOARD: ' + results.board);
 	for(var i=boardCards.length; i < results.board.length; i++) {
 		var card = createCardDiv(results.board[i]);
 		card.appendTo(pokerTable.find('.card-row'));
+		console.log(card);
 	}
 	// Update this player's hole cards
 	var holeCardsRow = $( "#hole-cards-row" );
@@ -515,7 +528,7 @@ function updateDisplay(results) {
 								class: 'inner-button',
 								id: 'raise-button',
 								onclick: 'raise()',
-								text: 'Raise'
+								text: 'Raise To'
 							});
 							var buttonContainer = $('<div/>', {
 								class: 'dash-button button-input-container',
@@ -596,20 +609,34 @@ function updateDisplay(results) {
 				$( '.button-text-input' ).prop('disabled', true);
 				$( '.player-dash' ).removeClass('action-on');
 			}
+		}
 	} else {
 		// remove all action buttons
 		if($('.dash-button').length !== 0) {
 			$('.dash-button').remove();
 		}
+		// remove action-on styling
+		$( '.player-dash' ).removeClass('action-on');
 		// if this player has a large enough stack to play again
-		var bigBlind = parseFloat($( "#big-blind" ).attr("data"));
-		if(results['stacks'][playerSeatNum] > bigBlind) {
+		if(results.sitting_out_players[playerSeatNum]) {
+			var bigBlind = parseFloat($( "#big-blind" ).attr("data"));
+			if(results['stacks'][playerSeatNum] > bigBlind) {
+				if($('#sit-in-button').length === 0) {
+					buttonColumn.prepend($('<div/>', {
+						class: 'dash-button',
+						id: 'sit-in-button',
+						onclick: 'toggleSitOut()',
+						text: 'Deal Me In'
+					}));
+				}
+			}
+		} else {
 			if($('#sit-out-button').length === 0) {
 				buttonColumn.prepend($('<div/>', {
 					class: 'dash-button',
-					id: 'sit-in-button',
+					id: 'sit-out-button',
 					onclick: 'toggleSitOut()',
-					text: 'Deal Me In'
+					text: 'Sit Out'
 				}));
 			}
 		}
@@ -661,10 +688,10 @@ function check() {
 function bet() {
 	var betAmount = parseFloat($( '#bet-input' ).val());
 	var stackAmount = parseFloat($( '.dash-stack' ).text());
-	console.log('Bet: ' + betAmount);
-	console.log('Stack: ' + stackAmount);
+	// console.log('Bet: ' + betAmount);
+	// console.log('Stack: ' + stackAmount);
 	if(betAmount < stackAmount) {
-		console.log('Good bet: ' + betAmount);
+		// console.log('Good bet: ' + betAmount);
 		var pathname = window.location.pathname;
 		var pathParts = pathname.split( '/' );
 		var sessionID = pathParts[1];
@@ -676,7 +703,7 @@ function bet() {
 	} else if(betAmount === stackAmount) {
 		allIn();
 	} else {
-		console.log('Bad bet: ' + betAmount);
+		// console.log('Bad bet: ' + betAmount);
 	}
 }
 
@@ -699,11 +726,11 @@ function raise() {
 	if($('#bet-info-0').length !== 0) {
 		currentBet = parseFloat($('#bet-info-0').find('.bet-num').text());
 	}
-	console.log('Raise: ' + raiseAmount);
-	console.log('Stack: ' + stackAmount);
-	console.log('Current Bet: ' + currentBet);
+	// console.log('Raise: ' + raiseAmount);
+	// console.log('Stack: ' + stackAmount);
+	// console.log('Current Bet: ' + currentBet);
 	if(raiseAmount < (stackAmount + currentBet)) {
-		console.log('Good raise: ' + raiseAmount);
+		// console.log('Good raise: ' + raiseAmount);
 		var pathname = window.location.pathname;
 		var pathParts = pathname.split( '/' );
 		var sessionID = pathParts[1];
@@ -721,7 +748,7 @@ function raise() {
 
 
 function allIn() {
-	console.log('All in');
+	// console.log('All in');
 	var pathname = window.location.pathname;
 	var pathParts = pathname.split( '/' );
 	var sessionID = pathParts[1];
@@ -744,13 +771,15 @@ function fold() {
 
 
 function toggleSitOut() {
-	var pathname = window.location.pathname;
-	var pathParts = pathname.split( '/' );
-	var sessionID = pathParts[1];
-	var userID = pathParts[2];
-	outbox.send(JSON.stringify({ 	func: 'toggle-sit-out',
-									user_id: userID, 
-									session_id: sessionID}));
+	if(!$('#sit-out-button').hasClass('disabled') && !$('#sit-in-button').hasClass('disabled')) {
+		var pathname = window.location.pathname;
+		var pathParts = pathname.split( '/' );
+		var sessionID = pathParts[1];
+		var userID = pathParts[2];
+		outbox.send(JSON.stringify({ 	func: 'toggle-sit-out',
+										user_id: userID, 
+										session_id: sessionID}));
+	}
 }
 
 
@@ -798,37 +827,57 @@ function addPlayer(seat_num) {
 	$('.byline-button').hide();
 
 
-		$('.player-byline').hover(function() {
-			var seat_num = parseInt(this.id.substring(7));
-			if(canAddToStack(seat_num)) {
-				// Fade in button when mouse hovers over byline
-				$(this).find('.byline-button').fadeIn(200);
-			}
-	    	}, 
-	    	function(){
-	    		var seat_num = parseInt(this.id.substring(7));
-	    		if(canAddToStack(seat_num)) {
-	    		// Fade out button when mouse leaves byline
-	    		$(this).find('.byline-button').fadeOut(200);
-	    	}
-		});
+	$('.player-byline').hover(function() {
+		var seat_num = parseInt(this.id.substring(7));
+		if(canAddToStack(seat_num)) {
+			// Fade in button when mouse hovers over byline
+			$(this).find('.byline-button').fadeIn(200);
+		}
+    	}, 
+    	function(){
+    		var seat_num = parseInt(this.id.substring(7));
+    		if(canAddToStack(seat_num)) {
+    			// Fade out button when mouse leaves byline
+    			$(this).find('.byline-button').fadeOut(200);
+    	}
+	});
+
+	$('.player-dash').hover(function() {
+		if(canAddToStack(0)) {
+			// Fade in button when mouse hovers over byline
+			$(this).find('.byline-button').fadeIn(200);
+		}
+    	}, 
+    	function(){
+    		if(canAddToStack(0)) {
+    			// Fade out button when mouse leaves byline
+    			$(this).find('.byline-button').fadeOut(200);
+    		}
+	});
+
 })();
+
+
 
 function canAddToStack(seat_num) {
 	var seatObj = $('#seat-' + seat_num);
 	var selectedPlayerIsFolded = seatObj.hasClass('folded');
+	if(seat_num === 0) {
+		selectedPlayerIsFolded = $('.player-dash').hasClass('folded');
+	}
 	var currentPlayerIsAdmin = $( "#is-admin" ).attr("data") === 'True';
-	console.log(currentPlayerIsAdmin);
-	return selectedPlayerIsFolded && currentPlayerIsAdmin;
+	return selectedPlayerIsFolded && currentPlayerIsAdmin && !pause_in_session;
 }
 
 
 function addToPlayerStack(seat_num) {
 	// total stack must be below max buy in
 	if(canAddToStack(seat_num)) {
-		var username = $('#username-' + seat_num).text();
-		console.log(username);
-		var title = "Add funds to " + username + "!";
+		var username = $('#username-' + seat_num).text() + "'s";
+		if(seat_num === 0) {
+			username = 'your';
+		}
+		var title = "Add funds to " + username + " stack!";
 		swal.withForm({   
 			title: title, 
 			text: 'Type the amount to add:',
@@ -845,12 +894,21 @@ function addToPlayerStack(seat_num) {
 			if (isConfirm) {
 				var amountToAdd = parseFloat(this.swalForm.amount);
 				var stackAmount = parseFloat($('#seat-' + seat_num).find(".seat-stack").text());
+				if(seat_num === 0) {
+					stackAmount = parseFloat($(".dash-stack").text());
+				}
 				var maxBuyIn = parseFloat($( "#max-buy-in" ).attr("data"));
 				var bigBlind = parseFloat($( "#big-blind" ).attr("data"));
-				console.log(amountToAdd);
-				console.log(stackAmount);
-				console.log(maxBuyIn);
-				console.log(bigBlind);
+				// console.log(amountToAdd);
+				// console.log(stackAmount);
+				// console.log(maxBuyIn);
+				// console.log(bigBlind);
+				var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
+				real_seat_num = mod(seat_num + playerSeatNum, 10);
+				if(real_seat_num === 0) {
+					real_seat_num = 10
+				}
+				// console.log(real_seat_num);
 				if((amountToAdd + stackAmount) <= maxBuyIn && (amountToAdd + stackAmount) > bigBlind) {
 					var pathname = window.location.pathname;
 					var pathParts = pathname.split( '/' );
@@ -859,12 +917,12 @@ function addToPlayerStack(seat_num) {
 					outbox.send(JSON.stringify({ 	func: 'add-chips', 
 													session_id: sessionID, 
 													user_id: userID,
-													seat_num: seat_num,
+													seat_num: real_seat_num,
 													chip_amount: amountToAdd}));
 					setTimeout(function(){ 
 						swal({
 							title: "Chips Added!",
-							text: amountToAdd + " added to " + username + "'s stack!",
+							text: amountToAdd + " added to " + username + " stack!",
 							type: "success",
 							confirmButtonColor: '#7EBDC2',
 						},

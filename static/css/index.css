@@ -204,7 +204,12 @@ body {
 	position: absolute;
     left: 50%;
     top: 50%;
-    transform: translate(-47%,-45%);
+    transform: translate(-50%,-45%);
+}
+
+.middle-text.dash {
+	transform: translate(-47%,-47%);
+    font-size: 1.5em;
 }
 
 .horiz-centered {
@@ -358,6 +363,7 @@ body {
 	top:85%;
 	right:-5%;
 }
+
 
 .dealer-chip {
 	position: absolute;
@@ -548,9 +554,11 @@ body {
     /*transition: opacity 0.2s ease;*/
 }
 
-.byline-button.mutable:hover {
-	cursor: pointer;
-	opacity: 1;
+.byline-button.dash {
+	top: -15px;
+    left: -30px;
+    height: 40px;
+    width: 40px;
 }
 
 .seat-info-line {

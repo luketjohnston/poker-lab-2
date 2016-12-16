@@ -200,12 +200,18 @@ def add_player(current_session_id, admin_id, email, seat_num):
 
 def add_chips(current_session_id, seat_num, chip_amount):
 
-	seat_num = int(player_id)
+	seat_num = int(seat_num)
 	chip_amount = float(chip_amount)
 
 	#get session, gamestate, player trying to bet, and street
+	current_player = None
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
-	current_player = Player.query.filter_by(id = seat_num, poker_session_id = current_session_id,).first()
+	for player in current_session.players:
+		app.logger.info(player.seat_num)
+		app.logger.info(player)
+		if player.seat_num == seat_num:
+			current_player = player
+			break
 	
 	current_player.stack_size += chip_amount
 
@@ -217,6 +223,7 @@ def toggle_sit_out(current_session_id, player_id):
 	current_player = Player.query.filter_by(id = player_id, poker_session_id = current_session_id,).first()
 
 	current_player.is_sitting_out = not current_player.is_sitting_out
+	db.session.commit()
 
 # @app.route('/<current_session_id>/deal-hand/', methods=['POST'])
 def deal_hand(current_session_id):
@@ -687,7 +694,7 @@ def game_and_session_info(current_session):
 		results['currently_playing_seats'] = {i : False for i in range(1,11)}
 		for player in current_session.players:
 			results['currently_playing_seats'][player.seat_num] = \
-			player.seat_num in [x.seat_num for x in game_state.player_list]
+			player.seat_num in [x.seat_num for x in game_state.player_list] and not player.is_sitting_out
 			
 	else:
 		results = {'board': []}
@@ -875,7 +882,7 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session):
 		##check to see if hand is over due to all but one player folding
 		elif len(current_game_state.get_unfolded_players()) < 2:
 
-			current_game_state.set_showing_players()
+			#current_game_state.set_showing_players()
 
 			current_player_object = current_game_state.get_unfolded_players()[0]
 			current_player = Player.query.filter_by(poker_session_id = current_session_id, seat_num = current_player_object.seat_num).first()

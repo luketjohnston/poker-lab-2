@@ -84,7 +84,7 @@
                         {% endif %}
                     {% endif %}
                 {% endfor %}
-                <div class="card-row flex-row">
+                <div id="board-row" class="card-row flex-row">
                     {% if results['session'].poker_hand %}
                         {% for card in results['board'] %}
                             {% include 'card.html' %}
@@ -93,13 +93,13 @@
                         <div class="start-button" onclick="dealHand()">Deal 'Em, Cowboy!</div>
                     {% endif %}
                 </div>
-                <div class="street-pot-info flex-row">
+               <!--  <div class="street-pot-info flex-row">
                     <img src="{{ url_for('static', filename = 'img/bet-icon.png') }}" style="height: 30px;">
                     <div class="stack-num">10000</div>
-                </div>
+                </div> -->
             </div>
         </div>
-        <div class="col-xs-5 col-centered player-dash {% if results['seat_to_act'] == results['player'].seat_num %}action-on {% endif %}">
+        <div class="col-xs-5 col-centered player-dash {% if results['seat_to_act'] == results['player'].seat_num %}action-on {% endif %} folded">
             <div class="col-xs-3 col-centered pot-dash">
                 <div class="dash-title small-text">Pot:</div>
                 {% if results['session'].poker_hand %}
@@ -113,14 +113,19 @@
                     <div class="chip-text dash">D</div>
                 </div>
             {% endif %}
+            {% if results['folded_players'][results['player'].seat_num] %}
+                <div class="byline-button dash" onclick="addToPlayerStack(0)">
+                    <div class="middle-text dash">+</div>
+                </div>
+            {% endif %}
             <div class="col-xs-6" style="height: 100%">
-                <div class="flex-row baseline" style="margin-bottom: 5px;">
+                <div id="dash-stack-row" class="flex-row baseline" style="margin-bottom: 5px;">
                     <img src="{{ url_for('static', filename = 'img/column-chart.png') }}" style="height: 25px; transform: translateY(10%);">
                     <div class="dash-title">Stack:</div>
                     <div class="dash-stack">{{results['player'].stack_size}}</div>
                 </div>
                 <div class="flex-row" id="hole-cards-row">
-                    {% if results['currently_playing_seats'][results['player'].seat_num] %}
+                    {% if results['currently_playing_seats'][results['player'].seat_num] and not results['folded_players'][results['player'].seat_num]%}
                         {% for card in results['hole_cards'][results['player'].seat_num] %}
                             {% include 'card.html' %}
                         {% endfor %}
@@ -158,7 +163,11 @@
                         <div class="dash-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="fold-button" onclick="fold()">Fold</div>
                     {% endif %}
                 {% else %}
-                    <div class="dash-button" id="sit-in-button" onclick="toggleSitOut()">Deal Me In</div>
+                    {% if results['session'].poker_hand and results['sitting_out_players'][results['player'].seat_num] %}
+                        <div class="dash-button" id="sit-in-button" onclick="toggleSitOut()">Deal Me In</div>
+                    {% else %}
+                        <div class="dash-button" id="sit-out-button" onclick="toggleSitOut()">Sit Out</div>
+                    {% endif %}
                 {% endif %}
                 </div>
             </div>

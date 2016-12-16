@@ -207,14 +207,19 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 				console.log('Show bet start: ' + showBet);
 				if(results.hasOwnProperty('showing_cards')) {
 					if(results.showing_cards.hasOwnProperty(i)) {
+
 						var showCardsRow = $( "#show-cards-row-" + visIdx );
 						var showCards = showCardsRow.children('.card');
+						console.log('showCards');
+						console.log(showCards);
 						if(showCards.length !== 0) {
 							showCards.remove();
 						}
 						for(var j=0; j < results.showing_cards[i].length; j++) {
 							var card = createCardDiv(results.showing_cards[i][j]);
 							card.appendTo(showCardsRow);
+							console.log('CARD');
+							console.log(card);
 							showBet = false;
 						}
 						// In order to avoid crowding, don't show the bet if the player
@@ -388,8 +393,8 @@ function updateDisplay(results) {
 
 	// Update the board cards
 	var boardCards = $('#board-row').children('.card');
-	console.log(boardCards);
-	console.log('BOARD: ' + results.board);
+	// console.log(boardCards);
+	// console.log('BOARD: ' + results.board);
 	for(var i=boardCards.length; i < results.board.length; i++) {
 		var card = createCardDiv(results.board[i]);
 		card.appendTo(pokerTable.find('.card-row'));

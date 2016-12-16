@@ -11,39 +11,19 @@ var outbox = new ReconnectingWebSocket(ws_scheme + location.host + "/submit");
 var gamestate = {};
 
 inbox.onmessage = function(message) {
-  var data = JSON.parse(message.data);
-  gamestate = data;
-  if(data['pause_for_hand_end']) {
-  	console.log("BEGIN PAUSE");
-	pauseInProgress = true;
-	updateDisplay(data);
-	window.setTimeout(function() {startNewHand(data);}, 20000);
-  } else {
-  	updateDisplay(data);
-  }
+	var data = JSON.parse(message.data);
+	gamestate_dict = data;
+	if(data['pause_for_hand_end']) {
+		console.log("BEGIN PAUSE");
+		updateDisplay(data);
+		window.setTimeout(function() {startNewHand(data);}, 20000);
+	} else {
+		updateDisplay(data);
+	}
 };
 
 
-var pauseInProgress = false;
 
-function retrieveGamestate() {
-	var target = "retrieve-gamestate/";
-	$.ajax({
-		url: target,
-		type: "GET",
-		success: function(data) {
-			if(data['pause_for_hand_end']) {
-				console.log("TRUE");
-			}
-			console.log(pauseInProgress);
-			if(data['pause_for_hand_end'] && !pauseInProgress) {
-				
-			} else {
-				updateDisplay(data);
-			}
-        }
-	});
-}
 
 function startNewHand(results) {
 	var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
@@ -429,105 +409,157 @@ function updateDisplay(results) {
 	// access the dictionaries we need in results
 	// if this player is folded we also need not assess
 	// if he can call or raise, etc
-	if(results.currently_playing_seats[playerSeatNum] && 
-		!results.folded_players[playerSeatNum]) {
-
-		// Check if this player can bet
-		if(results.can_bet[playerSeatNum]) {
-			// If can bet, then remove the raise,
-			// call, and all-in button if they're there
-			if($('#call-button').length !== 0) {
-				$('#call-button').remove();
+	if(results.currently_playing_seats[playerSeatNum]) { 
+		if (results.folded_players[playerSeatNum]) {
+			// if player has folded,
+			// remove all action buttons
+			if($('.dash-button').length !== 0) {
+				$('.dash-button').remove();
 			}
-			if($('#raise-button-container').length !== 0) {
-				$('#raise-button-container').remove();
+			// remove hole cards
+			if($('#hole-cards-row').has('.card').length !== 0){
+				$('#hole-cards-row').find('.card').remove();
 			}
-			if($('#all-in-button').length !== 0) {
-				$('#all-in-button').remove();
-			}
-			// If there's no bet button, add one
-			if($( '#bet-button' ).length === 0) {
-				var input = $('<input/>', {
-					class: 'button-text-input',
-					id: 'bet-input',
-					onkeypress: 'return isValidNumber(event.charCode)'
-				});
-				var betButton = $('<div/>', {
-					class: 'inner-button',
-					id: 'bet-button',
-					onclick: 'bet()',
-					text: 'Bet'
-				});
-				var buttonContainer = $('<div/>', {
-					class: 'dash-button button-input-container',
-					id: 'bet-button-container'
-				});
-				input.appendTo(buttonContainer);
-				betButton.appendTo(buttonContainer);
-				buttonColumn.prepend(buttonContainer);
-			}
-
-			// If player can bet, it can check
-			if($('#check-button').length === 0) {
+			// remove action-on styling
+			$( '.player-dash' ).removeClass('action-on');
+			// If player is folded and currently playing, it has the
+			// option to sit out
+			if($('#sit-out-button').length === 0) {
 				buttonColumn.prepend($('<div/>', {
 					class: 'dash-button',
-					id: 'check-button',
-					onclick: 'check()',
-					text: 'Check'
+					id: 'sit-out-button',
+					onclick: 'toggleSitOut()',
+					text: 'Sit Out'
 				}));
 			}
-			
 		} else {
-			// If player cannot bet
-			// remove bet button and check button
-			// if they are there
-			if($('#check-button').length !== 0) {
-				$('#check-button').remove();
+			// Remove sit-out button if present
+			if($('#sit-out-button').length !== 0) {
+				$('#sit-out-button').remove();
 			}
-			if($('#bet-button-container').length !== 0) {
-				$('#bet-button-container').remove();
-			}
+			// Check if this player can bet
+			if(results.can_bet[playerSeatNum]) {
+				// If can bet, then remove the raise,
+				// call, and all-in button if they're there
+				if($('#call-button').length !== 0) {
+					$('#call-button').remove();
+				}
+				if($('#raise-button-container').length !== 0) {
+					$('#raise-button-container').remove();
+				}
+				if($('#all-in-button').length !== 0) {
+					$('#all-in-button').remove();
+				}
+				// If there's no bet button, add one
+				if($( '#bet-button' ).length === 0) {
+					var input = $('<input/>', {
+						class: 'button-text-input',
+						id: 'bet-input',
+						onkeypress: 'return isValidNumber(event.charCode)'
+					});
+					var betButton = $('<div/>', {
+						class: 'inner-button',
+						id: 'bet-button',
+						onclick: 'bet()',
+						text: 'Bet'
+					});
+					var buttonContainer = $('<div/>', {
+						class: 'dash-button button-input-container',
+						id: 'bet-button-container'
+					});
+					input.appendTo(buttonContainer);
+					betButton.appendTo(buttonContainer);
+					buttonColumn.prepend(buttonContainer);
+				}
 
-			// Check if player can call
-			if(results.can_call[playerSeatNum]) {
+				// If player can bet, it can check
+				if($('#check-button').length === 0) {
+					buttonColumn.prepend($('<div/>', {
+						class: 'dash-button',
+						id: 'check-button',
+						onclick: 'check()',
+						text: 'Check'
+					}));
+				}
 				
-				// The player can only possibly raise if he/she
-				// also can call
-				if(results.can_raise[playerSeatNum] && results.is_raising_allowed) {
-					// If player can raise, check if the all-in
-					// button is there, remove it if so
-					if($( '#all-in-button' ).length !== 0) {
-						$( '#all-in-button' ).remove();
+			} else {
+				// If player cannot bet
+				// remove bet button and check button
+				// if they are there
+				if($('#check-button').length !== 0) {
+					$('#check-button').remove();
+				}
+				if($('#bet-button-container').length !== 0) {
+					$('#bet-button-container').remove();
+				}
+
+				// Check if player can call
+				if(results.can_call[playerSeatNum]) {
+					
+					// The player can only possibly raise if he/she
+					// also can call
+					if(results.can_raise[playerSeatNum] && results.is_raising_allowed) {
+						// If player can raise, check if the all-in
+						// button is there, remove it if so
+						if($( '#all-in-button' ).length !== 0) {
+							$( '#all-in-button' ).remove();
+						}
+						// If there's no raise button, add one
+						if($( '#raise-button' ).length === 0) {
+							var input = $('<input/>', {
+								class: 'button-text-input',
+								id: 'raise-input',
+								onkeypress: 'return isValidNumber(event.charCode)'
+							});
+							var raiseButton = $('<div/>', {
+								class: 'inner-button',
+								id: 'raise-button',
+								onclick: 'raise()',
+								text: 'Raise'
+							});
+							var buttonContainer = $('<div/>', {
+								class: 'dash-button button-input-container',
+								id: 'raise-button-container'
+							});
+							input.appendTo(buttonContainer);
+							raiseButton.appendTo(buttonContainer);
+							buttonColumn.prepend(buttonContainer);
+						}
+					} else {
+						// If player can't raise, and raise button
+						// is present, remove it
+						if($( '#raise-button-container' ).length !== 0) {
+							$( '#raise-button-container' ).remove();
+						}
+						// If player can't raise but can call,
+						// the player can go all in
+						if($( '#all-in-button' ).length === 0) {
+							buttonColumn.prepend($('<div/>', {
+								class: 'dash-button',
+								id: 'all-in-button',
+								onclick: 'allIn()',
+								text: 'All-in'
+							}));
+						}
 					}
-					// If there's no raise button, add one
-					if($( '#raise-button' ).length === 0) {
-						var input = $('<input/>', {
-							class: 'button-text-input',
-							id: 'raise-input',
-							onkeypress: 'return isValidNumber(event.charCode)'
-						});
-						var raiseButton = $('<div/>', {
-							class: 'inner-button',
-							id: 'raise-button',
-							onclick: 'raise()',
-							text: 'Raise'
-						});
-						var buttonContainer = $('<div/>', {
-							class: 'dash-button button-input-container',
-							id: 'raise-button-container'
-						});
-						input.appendTo(buttonContainer);
-						raiseButton.appendTo(buttonContainer);
-						buttonColumn.prepend(buttonContainer);
+					if($( '#call-button' ).length === 0) {
+						buttonColumn.prepend($('<div/>', {
+							class: 'dash-button',
+							id: 'call-button',
+							onclick: 'call()',
+							text: 'Call'
+						}));
 					}
+
 				} else {
-					// If player can't raise, and raise button
-					// is present, remove it
+					// If player cannot call
+					// remove the call button if it's there
+					if($( '#call-button' ).length !== 0) {
+						$( '#call-button' ).remove();
+					}
 					if($( '#raise-button-container' ).length !== 0) {
 						$( '#raise-button-container' ).remove();
 					}
-					// If player can't raise but can call,
-					// the player can go all in
 					if($( '#all-in-button' ).length === 0) {
 						buttonColumn.prepend($('<div/>', {
 							class: 'dash-button',
@@ -537,68 +569,67 @@ function updateDisplay(results) {
 						}));
 					}
 				}
-				if($( '#call-button' ).length === 0) {
-					buttonColumn.prepend($('<div/>', {
-						class: 'dash-button',
-						id: 'call-button',
-						onclick: 'call()',
-						text: 'Call'
-					}));
-				}
-
-			} else {
-				// If player cannot call
-				// remove the call button if it's there
-				if($( '#call-button' ).length !== 0) {
-					$( '#call-button' ).remove();
-				}
-				if($( '#raise-button-container' ).length !== 0) {
-					$( '#raise-button-container' ).remove();
-				}
-				if($( '#all-in-button' ).length === 0) {
-					buttonColumn.prepend($('<div/>', {
-						class: 'dash-button',
-						id: 'all-in-button',
-						onclick: 'allIn()',
-						text: 'All-in'
-					}));
-				}
 			}
-		}
-		// The player can always fold during hand
-		if($( '#fold-button' ).length === 0) {
-			$('<div/>', {
-				class: 'dash-button',
-				id: 'fold-button',
-				onclick: 'fold()',
-				text: 'Fold'
-			}).appendTo(buttonColumn);
-		}
+			// The player can always fold during hand
+			if($( '#fold-button' ).length === 0) {
+				$('<div/>', {
+					class: 'dash-button',
+					id: 'fold-button',
+					onclick: 'fold()',
+					text: 'Fold'
+				}).appendTo(buttonColumn);
+			}
 
-		// if action is on this player, remove
-		// the disabled class from the action buttons
-		// otherwise add it
-		if(results.seat_to_act === playerSeatNum) {
-			$( '.dash-button' ).removeClass('disabled');
-			$( '.inner-button' ).removeClass('disabled');
-			$( '.button-text-input' ).removeClass('disabled');
-			$( '.button-text-input' ).prop('disabled', false);
-			$( '.player-dash' ).addClass('action-on');
-		} else {
-			$( '.dash-button' ).addClass('disabled');
-			$( '.inner-button' ).addClass('disabled');
-			$( '.button-text-input' ).addClass('disabled');
-			$( '.button-text-input' ).prop('disabled', true);
-			$( '.player-dash' ).removeClass('action-on');
-		}
+			// if action is on this player, remove
+			// the disabled class from the action buttons
+			// otherwise add it
+			if(results.seat_to_act === playerSeatNum) {
+				$( '.dash-button' ).removeClass('disabled');
+				$( '.inner-button' ).removeClass('disabled');
+				$( '.button-text-input' ).removeClass('disabled');
+				$( '.button-text-input' ).prop('disabled', false);
+				$( '.player-dash' ).addClass('action-on');
+			} else {
+				$( '.dash-button' ).addClass('disabled');
+				$( '.inner-button' ).addClass('disabled');
+				$( '.button-text-input' ).addClass('disabled');
+				$( '.button-text-input' ).prop('disabled', true);
+				$( '.player-dash' ).removeClass('action-on');
+			}
 	} else {
-		// if hand is not in session or player has folded,
-		// remove all action buttons and hole cards
+		// remove all action buttons
 		if($('.dash-button').length !== 0) {
 			$('.dash-button').remove();
 		}
-		if($('#hole-cards-row').has('.card').length !== 0){
-			$('#hole-cards-row').find('.card').remove();
+		// if this player has a large enough stack to play again
+		var bigBlind = parseFloat($( "#big-blind" ).attr("data"));
+		if(results['stacks'][playerSeatNum] > bigBlind) {
+			if($('#sit-out-button').length === 0) {
+				buttonColumn.prepend($('<div/>', {
+					class: 'dash-button',
+					id: 'sit-in-button',
+					onclick: 'toggleSitOut()',
+					text: 'Deal Me In'
+				}));
+			}
+		}
+	}
+	// Update dash dealer button
+	if(results['button_seat'] === playerSeatNum) {
+		if($( '.dealer-chip.dash' ).length === 0) {
+			var dealerChip = $('<div/>', {
+				class: 'dealer-chip dash'
+			});
+			var chipText = $('<div/>', {
+				class: 'chip-text dash',
+				text: 'D'
+			});
+			chipText.appendTo(dealerChip);
+			dealerChip.appendTo($( '.player-dash' ));
+		}
+	} else {
+		if($( '.dealer-chip.dash' ).length !== 0) {
+			$( '.dealer-chip.dash' ).remove();
 		}
 	}
 }
@@ -712,6 +743,17 @@ function fold() {
 }
 
 
+function toggleSitOut() {
+	var pathname = window.location.pathname;
+	var pathParts = pathname.split( '/' );
+	var sessionID = pathParts[1];
+	var userID = pathParts[2];
+	outbox.send(JSON.stringify({ 	func: 'toggle-sit-out',
+									user_id: userID, 
+									session_id: sessionID}));
+}
+
+
 function addPlayer(seat_num) {
 	swal.withForm({   
 		title: "Add another player!", 
@@ -750,4 +792,93 @@ function addPlayer(seat_num) {
     		}, 2000);
 		}
 	});
+}
+
+(function() {
+	$('.byline-button').hide();
+
+
+		$('.player-byline').hover(function() {
+			var seat_num = parseInt(this.id.substring(7));
+			if(canAddToStack(seat_num)) {
+				// Fade in button when mouse hovers over byline
+				$(this).find('.byline-button').fadeIn(200);
+			}
+	    	}, 
+	    	function(){
+	    		var seat_num = parseInt(this.id.substring(7));
+	    		if(canAddToStack(seat_num)) {
+	    		// Fade out button when mouse leaves byline
+	    		$(this).find('.byline-button').fadeOut(200);
+	    	}
+		});
+})();
+
+function canAddToStack(seat_num) {
+	var seatObj = $('#seat-' + seat_num);
+	var selectedPlayerIsFolded = seatObj.hasClass('folded');
+	var currentPlayerIsAdmin = $( "#is-admin" ).attr("data") === 'True';
+	console.log(currentPlayerIsAdmin);
+	return selectedPlayerIsFolded && currentPlayerIsAdmin;
+}
+
+
+function addToPlayerStack(seat_num) {
+	// total stack must be below max buy in
+	if(canAddToStack(seat_num)) {
+		var username = $('#username-' + seat_num).text();
+		console.log(username);
+		var title = "Add funds to " + username + "!";
+		swal.withForm({   
+			title: title, 
+			text: 'Type the amount to add:',
+			confirmButtonColor: '#7EBDC2',
+			showCancelButton: true,   
+			closeOnConfirm: false,   
+			showLoaderOnConfirm: true, 
+			html: true,
+			formFields: [
+				{ id: 'amount', placeholder: '100'},
+			]
+		}, 
+		function(isConfirm) {
+			if (isConfirm) {
+				var amountToAdd = parseFloat(this.swalForm.amount);
+				var stackAmount = parseFloat($('#seat-' + seat_num).find(".seat-stack").text());
+				var maxBuyIn = parseFloat($( "#max-buy-in" ).attr("data"));
+				var bigBlind = parseFloat($( "#big-blind" ).attr("data"));
+				console.log(amountToAdd);
+				console.log(stackAmount);
+				console.log(maxBuyIn);
+				console.log(bigBlind);
+				if((amountToAdd + stackAmount) <= maxBuyIn && (amountToAdd + stackAmount) > bigBlind) {
+					var pathname = window.location.pathname;
+					var pathParts = pathname.split( '/' );
+					var sessionID = pathParts[1];
+					var userID = pathParts[2];
+					outbox.send(JSON.stringify({ 	func: 'add-chips', 
+													session_id: sessionID, 
+													user_id: userID,
+													seat_num: seat_num,
+													chip_amount: amountToAdd}));
+					setTimeout(function(){ 
+						swal({
+							title: "Chips Added!",
+							text: amountToAdd + " added to " + username + "'s stack!",
+							type: "success",
+							confirmButtonColor: '#7EBDC2',
+						},
+						function() {
+							// location.replace("/booker/profile/?tab=group");
+						});   
+		    		}, 2000);
+				} else {
+					setTimeout(function(){ 
+						swal("Uh oh! Player stack must be bigger than " + bigBlind + " and smaller than " + maxBuyIn + "!");   
+	    			}, 2000);
+				}
+			}
+		});
+	}
+
 }

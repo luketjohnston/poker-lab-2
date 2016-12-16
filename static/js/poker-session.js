@@ -214,10 +214,10 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 						for(var j=0; j < results.showing_cards[i].length; j++) {
 							var card = createCardDiv(results.showing_cards[i][j]);
 							card.appendTo(showCardsRow);
+							showBet = false;
 						}
 						// In order to avoid crowding, don't show the bet if the player
 						// is also showing cards
-						showBet = false;
 					}
 				}
 				// update bets

@@ -20,7 +20,7 @@ inbox.onmessage = function(message) {
 		updateDisplay(data);
 		$('#sit-out-button').addClass('disabled');
 		$('#sit-in-button').addClass('disabled');
-		window.setTimeout(function() {startNewHand(data);}, 20000);
+		window.setTimeout(function() {startNewHand(data);}, 8000);
 	} else {
 		updateDisplay(data);
 	}

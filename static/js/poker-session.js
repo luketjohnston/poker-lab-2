@@ -204,6 +204,7 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 				}
 				var showBet = true;
 				// update showing cards
+				console.log('Show bet start: ' + showBet);
 				if(results.hasOwnProperty('showing_cards')) {
 					if(results.showing_cards.hasOwnProperty(i)) {
 						var showCardsRow = $( "#show-cards-row-" + visIdx );
@@ -222,6 +223,7 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 				}
 				// update bets
 				// first check if there are any bets
+				console.log('Show bet end: ' + showBet);
 				if(showBet) {
 					if(results.hasOwnProperty('current_bets')) {
 						// only display the bets if this player is not
@@ -618,7 +620,7 @@ function updateDisplay(results) {
 		// remove action-on styling
 		$( '.player-dash' ).removeClass('action-on');
 		// if this player has a large enough stack to play again
-		if(results.sitting_out_players[playerSeatNum]) {
+		if(results.sitting_out_players && results.sitting_out_players[playerSeatNum]) {
 			var bigBlind = parseFloat($( "#big-blind" ).attr("data"));
 			if(results['stacks'][playerSeatNum] > bigBlind) {
 				if($('#sit-in-button').length === 0) {

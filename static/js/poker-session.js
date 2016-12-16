@@ -219,18 +219,20 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 				console.log('CARD INFO');
 				console.log(results['showing_cards']);
 				if(results.hasOwnProperty('showing_cards')) {
-					var showCardsRow = $( "#show-cards-row-" + visIdx );
-					console.log('showCardsRow');
-					console.log(showCardsRow);
-					var showCards = showCardsRow.find('.card');
-					if(showCards.length !== 0) {
-						showCards.remove();
-					}
-					for(var j=0; j < results.showing_cards[i].length; j++) {
-						var card = createCardDiv(results.showing_cards[i][j]);
-						console.log('card');
-						console.log(card);
-						card.appendTo(showCardsRow);
+					if(results.showing_cards.hasOwnProperty(i)) {
+						var showCardsRow = $( "#show-cards-row-" + visIdx );
+						console.log('showCardsRow');
+						console.log(showCardsRow);
+						var showCards = showCardsRow.find('.card');
+						if(showCards.length !== 0) {
+							showCards.remove();
+						}
+						for(var j=0; j < results.showing_cards[i].length; j++) {
+							var card = createCardDiv(results.showing_cards[i][j]);
+							console.log('card');
+							console.log(card);
+							card.appendTo(showCardsRow);
+						}
 					}
 				}
 			} else {

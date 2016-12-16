@@ -159,7 +159,14 @@ class GameState:
 	def post_blinds(self):
 		#update the total_bet of the small/big blind. 
 		#use this at start of hand to post blinds
+
+		#These methods do not check to see if the blinds have enough money to post. Thus, the other game logic must 
+		#ensure that a player with less money than the big blind is forced to sit out and never added to the gamestate.
+		#
+		#Otherwise the player stack will become negative
+
 		if len(self.player_list) > 2:
+
 			self.player_list[1].total_bet = self.small_blind
 			self.player_list[1].current_bet = self.small_blind
 			self.player_list[1].stack_size = self.player_list[1].stack_size - self.small_blind

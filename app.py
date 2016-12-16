@@ -111,6 +111,10 @@ def retrieve_gamestate(current_session_id, player_id):
 		results['winning_hole_cards'] = winning_hole_cards
 		results['winning_hands'] = winning_hands
 		results['pot_sizes'] = pot_sizes
+		
+	results['session_id'] = str(current_session_id)
+	app.logger.info(u'HERRRREEEE!!!!!!!!!!')
+	app.logger.info(results['session_id'])
 
 
 	return json.dumps(results)
@@ -822,7 +826,6 @@ def get_game_state_dict(current_session_id):
 		results['total_pot'] = current_game_state.get_total_pot()
 		results['pause_for_street_end'] = current_game_state.pause_for_street_end
 		results['pause_for_hand_end'] = current_game_state.pause_for_hand_end
-		results['session_id'] = current_session_id
 
 
 		#these keys correspond to other dictionaries that are indexed

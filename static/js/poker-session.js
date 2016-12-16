@@ -16,6 +16,8 @@ inbox.onmessage = function(message) {
 	var pathname = window.location.pathname;
 	var pathParts = pathname.split( '/' );
 	var sessionID = pathParts[1];
+	console.log(data['session_id']);
+	console.log(sessionID);
 	if(data['session_id'] === sessionID) {
 		gamestate_dict = data;
 		if(data['pause_for_hand_end']) {

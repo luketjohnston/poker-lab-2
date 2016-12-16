@@ -113,7 +113,7 @@
                     <div class="chip-text dash">D</div>
                 </div>
             {% endif %}
-            {% if results['folded_players'][results['player'].seat_num] %}
+            {% if results['folded_players'] and results['folded_players'][results['player'].seat_num] %}
                 <div class="byline-button dash" onclick="addToPlayerStack(0)">
                     <div class="middle-text dash">+</div>
                 </div>
@@ -136,7 +136,7 @@
             <div class="col-xs-6" style="height: 100%;">
                 <div class="flex-col button-col col-xs-8">
                 {% if results['currently_playing_seats'][results['player'].seat_num] %}
-                    {% if results['folded_players'][results['player'].seat_num] %}
+                    {% if results['folded_players'] and results['folded_players'][results['player'].seat_num] %}
                         <div class="dash-button" id="sit-out-button" onclick="toggleSitOut()">Sit Out</div>
                     {% else %}
                         {% if results['can_bet'][results['player'].seat_num] %}

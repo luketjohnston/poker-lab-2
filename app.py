@@ -69,23 +69,6 @@ def create_session():
 		player_id=new_admin_player.id))
 
 
-def game_and_session_info(current_session):
-	if current_session.poker_hand:
-		game_state = current_session.poker_hand.game_state
-		results = get_game_state_dict(current_session.id)
-		if game_state.street != 0:
-			results['board'] = [card.get_string_tuple() for card in game_state.board][:(2+game_state.street)]
-		else:
-			results['board'] = []
-		results['currently_playing_seats'] = {i : False for i in range(1,11)}
-		for player in current_session.players:
-			results['currently_playing_seats'][player.seat_num] = \
-			player.seat_num in [x.seat_num for x in game_state.player_list]
-			
-	else:
-		results = {'board': []}
-		results['currently_playing_seats'] = {i : False for i in range(1,11)}
-
 
 @app.route('/<current_session_id>/show-gamestate')
 def show_gamestate(current_session_id):
@@ -638,50 +621,6 @@ def outbox(ws):
 #                 Helper Functions                #
 #												  #
 ###################################################
-
-def bet(current_session_id, player_id, bet_size):
-
-
-	player_id = int(player_id)
-	bet_size = float(bet_size)
-
-	#get session, gamestate, player trying to bet, and street
-	current_session = PokerSession.query.filter_by(id = current_session_id).first()
-	current_hand = current_session.poker_hand
-	current_player = Player.query.filter_by(id = player_id, poker_session_id = current_session_id,).first()
-	seat_num = current_player.seat_num
-	current_game_state = current_hand.game_state
-	current_player_object = current_game_state.get_player_at_seat(seat_num)
-	current_street = current_game_state.street
-
-	if current_player_object == current_game_state.player_to_act:
-
-		#If the player is able to bet, it means no one has entered the pot and thus
-		#the player must be the last_valid_raiser
-		current_game_state.last_valid_raiser = current_player_object
-
-		#Update player stack and add bet to the bet list
-		#Can remove betsize from stack directly, because player cannot bet
-		# unless no other player has bet yet (i.e. all current_bets = 0
-		current_player.stack_size = current_player.stack_size - bet_size 
-		current_player_object.stack_size = current_player_object.stack_size - bet_size
-
-		#Update the total and current bets of the player who bet
-		current_player_object.total_bet = current_player_object.total_bet + bet_size
-		current_player_object.current_bet = current_player_object.current_bet  + bet_size
-
-		#Do not need to check if action has closed, because a bet can never close action
-		#So just move the player_to_act to next live player
-		old_actor = current_game_state.player_to_act ## this should also be current_player_object. front end should
-														## only trigger this route from player whose action it is 										
-		next_actor = current_game_state.get_live_player_to_left(old_actor)
-		current_game_state.player_to_act = next_actor
-		
-		current_hand.game_state = deepcopy(current_game_state)
-	
-		db.session.commit()
-
-	return 'Success.'
 
 
 def game_and_session_info(current_session):

@@ -16,6 +16,9 @@
   </head>
   <body>
   <div id="seat-number" data="{{results['player'].seat_num}}"></div>
+  <div id="is-admin" data="{{results['player'].is_admin}}"></div>
+  <div id="max-buy-in" data="{{results['session'].max_buy_in}}"></div>
+  <div id="big-blind" data="{{results['session'].big_blind}}"></div>
   <div class="header xs-col-12">
         <a href="/">
             <div class="header-title"> Poker Lab 
@@ -37,10 +40,16 @@
                             <div class="seat occupied {% if results['session'].poker_hand and ((not results['currently_playing_seats'][i]) or results['folded_players'][i]) %}folded {% endif %} {% if results['currently_playing_seats'][i] and results['seat_to_act'] == i %}action-on {% endif %}" id="seat-{{vis_idx}}">
 
                                 <div class="seat-title" >{{results['usernames'][i][0].upper()}}</div>
-                                <div class="player-byline" id="byline-{{vis_idx}}">
-                                    <div>{{results['usernames'][i]}}</div>
+
+                                <div class="player-byline" id="byline-{{vis_idx}}" onclick="addToPlayerStack({{vis_idx}})">
+                                    <div class="byline-button">
+                                        <div class="middle-text">+</div>
+                                    </div>
+                                    <div id="username-{{vis_idx}}">{{results['usernames'][i]}}</div>
                                     <hr class="seat-info-line" id="line-{{vis_idx}}">
-                                    <div class="seat-stack">{% if results['stacks'][i] < 1000 %}{{'%0.2f' | format(results['stacks'][i]|float)}} {% else %}{{'%0.0f' | format(results['stacks'][i]|float)}} {% endif %}</div>
+                                    <div class="seat-stack">
+                                        {% if results['stacks'][i] < 1000 %}{{'%0.2f' | format(results['stacks'][i]|float)}} {% else %}{{'%0.0f' | format(results['stacks'][i]|float)}} {% endif %}
+                                    </div>
                                 </div>
                                 {% if results['button_seat'] == i %}
                                     <div class="dealer-chip">

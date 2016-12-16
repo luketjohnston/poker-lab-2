@@ -11,39 +11,19 @@ var outbox = new ReconnectingWebSocket(ws_scheme + location.host + "/submit");
 var gamestate = {};
 
 inbox.onmessage = function(message) {
-  var data = JSON.parse(message.data);
-  gamestate = data;
-  if(data['pause_for_hand_end']) {
-  	console.log("BEGIN PAUSE");
-	pauseInProgress = true;
-	updateDisplay(data);
-	window.setTimeout(function() {startNewHand(data);}, 20000);
-  } else {
-  	updateDisplay(data);
-  }
+	var data = JSON.parse(message.data);
+	gamestate_dict = data;
+	if(data['pause_for_hand_end']) {
+		console.log("BEGIN PAUSE");
+		updateDisplay(data);
+		window.setTimeout(function() {startNewHand(data);}, 20000);
+	} else {
+		updateDisplay(data);
+	}
 };
 
 
-var pauseInProgress = false;
 
-function retrieveGamestate() {
-	var target = "retrieve-gamestate/";
-	$.ajax({
-		url: target,
-		type: "GET",
-		success: function(data) {
-			if(data['pause_for_hand_end']) {
-				console.log("TRUE");
-			}
-			console.log(pauseInProgress);
-			if(data['pause_for_hand_end'] && !pauseInProgress) {
-				
-			} else {
-				updateDisplay(data);
-			}
-        }
-	});
-}
 
 function startNewHand(results) {
 	var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
@@ -748,4 +728,93 @@ function addPlayer(seat_num) {
     		}, 2000);
 		}
 	});
+}
+
+(function() {
+	$('.byline-button').hide();
+
+
+		$('.player-byline').hover(function() {
+			var seat_num = parseInt(this.id.substring(7));
+			if(canAddToStack(seat_num)) {
+				// Fade in button when mouse hovers over byline
+				$(this).find('.byline-button').fadeIn(200);
+			}
+	    	}, 
+	    	function(){
+	    		var seat_num = parseInt(this.id.substring(7));
+	    		if(canAddToStack(seat_num)) {
+	    		// Fade out button when mouse leaves byline
+	    		$(this).find('.byline-button').fadeOut(200);
+	    	}
+		});
+})();
+
+function canAddToStack(seat_num) {
+	var seatObj = $('#seat-' + seat_num);
+	var selectedPlayerIsFolded = seatObj.hasClass('folded');
+	var currentPlayerIsAdmin = $( "#is-admin" ).attr("data") === 'True';
+	console.log(currentPlayerIsAdmin);
+	return selectedPlayerIsFolded && currentPlayerIsAdmin;
+}
+
+
+function addToPlayerStack(seat_num) {
+	// total stack must be below max buy in
+	if(canAddToStack(seat_num)) {
+		var username = $('#username-' + seat_num).text();
+		console.log(username);
+		var title = "Add funds to " + username + "!";
+		swal.withForm({   
+			title: title, 
+			text: 'Type the amount to add:',
+			confirmButtonColor: '#7EBDC2',
+			showCancelButton: true,   
+			closeOnConfirm: false,   
+			showLoaderOnConfirm: true, 
+			html: true,
+			formFields: [
+				{ id: 'amount', placeholder: '100'},
+			]
+		}, 
+		function(isConfirm) {
+			if (isConfirm) {
+				var amountToAdd = parseFloat(this.swalForm.amount);
+				var stackAmount = parseFloat($('#seat-' + seat_num).find(".seat-stack").text());
+				var maxBuyIn = parseFloat($( "#max-buy-in" ).attr("data"));
+				var bigBlind = parseFloat($( "#big-blind" ).attr("data"));
+				console.log(amountToAdd);
+				console.log(stackAmount);
+				console.log(maxBuyIn);
+				console.log(bigBlind);
+				if((amountToAdd + stackAmount) <= maxBuyIn && (amountToAdd + stackAmount) > bigBlind) {
+					var pathname = window.location.pathname;
+					var pathParts = pathname.split( '/' );
+					var sessionID = pathParts[1];
+					var userID = pathParts[2];
+					outbox.send(JSON.stringify({ 	func: 'add-chips', 
+													session_id: sessionID, 
+													user_id: userID,
+													seat_num: seat_num,
+													chip_amount: amountToAdd}));
+					setTimeout(function(){ 
+						swal({
+							title: "Chips Added!",
+							text: amountToAdd + " added to " + username + "'s stack!",
+							type: "success",
+							confirmButtonColor: '#7EBDC2',
+						},
+						function() {
+							// location.replace("/booker/profile/?tab=group");
+						});   
+		    		}, 2000);
+				} else {
+					setTimeout(function(){ 
+						swal("Uh oh! Player stack must be bigger than " + bigBlind + " and smaller than " + maxBuyIn + "!");   
+	    			}, 2000);
+				}
+			}
+		});
+	}
+
 }

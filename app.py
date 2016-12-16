@@ -822,6 +822,7 @@ def get_game_state_dict(current_session_id):
 		results['total_pot'] = current_game_state.get_total_pot()
 		results['pause_for_street_end'] = current_game_state.pause_for_street_end
 		results['pause_for_hand_end'] = current_game_state.pause_for_hand_end
+		results['session_id'] = current_session_id
 
 
 		#these keys correspond to other dictionaries that are indexed

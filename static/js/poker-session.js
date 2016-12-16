@@ -13,16 +13,21 @@ var pause_in_session = false;
 
 inbox.onmessage = function(message) {
 	var data = JSON.parse(message.data);
-	gamestate_dict = data;
-	if(data['pause_for_hand_end']) {
-		pause_in_session = true;
-		console.log("BEGIN PAUSE");
-		updateDisplay(data);
-		$('#sit-out-button').addClass('disabled');
-		$('#sit-in-button').addClass('disabled');
-		window.setTimeout(function() {startNewHand(data);}, 8000);
-	} else {
-		updateDisplay(data);
+	var pathname = window.location.pathname;
+	var pathParts = pathname.split( '/' );
+	var sessionID = pathParts[1];
+	if(data['session_id'] === sessionID) {
+		gamestate_dict = data;
+		if(data['pause_for_hand_end']) {
+			pause_in_session = true;
+			console.log("BEGIN PAUSE");
+			updateDisplay(data);
+			$('#sit-out-button').addClass('disabled');
+			$('#sit-in-button').addClass('disabled');
+			window.setTimeout(function() {startNewHand(data);}, 8000);
+		} else {
+			updateDisplay(data);
+		}
 	}
 };
 

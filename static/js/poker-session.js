@@ -571,12 +571,34 @@ function updateDisplay(results) {
 		}
 	} else {
 		// if hand is not in session or player has folded,
-		// remove all action buttons and hole cards
+		// remove all action buttons
 		if($('.dash-button').length !== 0) {
 			$('.dash-button').remove();
 		}
+		// remove hole cards
 		if($('#hole-cards-row').has('.card').length !== 0){
 			$('#hole-cards-row').find('.card').remove();
+		}
+		// remove action-on styling
+		$( '.player-dash' ).removeClass('action-on');
+		// remove dealer
+	}
+	// Update dash dealer button
+	if(results['button_seat'] === playerSeatNum) {
+		if($( '.dealer-chip.dash' ).length === 0) {
+			var dealerChip = $('<div/>', {
+				class: 'dealer-chip dash'
+			});
+			var chipText = $('<div/>', {
+				class: 'chip-text dash',
+				text: 'D'
+			});
+			chipText.appendTo(dealerChip);
+			dealerChip.appendTo($( '.player-dash' ));
+		}
+	} else {
+		if($( '.dealer-chip.dash' ).length !== 0) {
+			$( '.dealer-chip.dash' ).remove();
 		}
 	}
 }

@@ -370,6 +370,13 @@ body {
     border: 2px solid #333;
 }
 
+.dealer-chip.dash {
+	top: -15px;
+    right: -15px;
+    height: 40px;
+    width: 40px;
+}
+
 .chip-text {
 	position: absolute;
     top: 50%;
@@ -377,6 +384,11 @@ body {
     transform: translate(-45%,-45%);
     font-weight: bold;
     font-size: 1.1em;
+}
+
+.chip-text.dash {
+    transform: translate(-47%,-47%);
+    font-size: 1.5em;
 }
 
 .bet-num {

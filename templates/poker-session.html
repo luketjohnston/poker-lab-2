@@ -108,6 +108,11 @@
                     <div class="dash-pot">--</div>
                 {% endif %}
             </div>
+            {% if results['button_seat'] == results['player'].seat_num %}
+                <div class="dealer-chip dash">
+                    <div class="chip-text dash">D</div>
+                </div>
+            {% endif %}
             <div class="col-xs-6" style="height: 100%">
                 <div class="flex-row baseline" style="margin-bottom: 5px;">
                     <img src="{{ url_for('static', filename = 'img/column-chart.png') }}" style="height: 25px; transform: translateY(10%);">

@@ -852,7 +852,7 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session):
 
 		pot_list = current_game_state.get_all_winnings()
 
-		if len(current_game_state.get_unfolded_players()) > 2:
+		if len(current_game_state.get_unfolded_players()) >= 2:
 			current_game_state.set_showing_players()
 
 		for player in current_session.players: 

@@ -113,9 +113,6 @@ def retrieve_gamestate(current_session_id, player_id):
 		results['pot_sizes'] = pot_sizes
 		
 	results['session_id'] = str(current_session_id)
-	app.logger.info(u'HERRRREEEE!!!!!!!!!!')
-	app.logger.info(results['session_id'])
-
 
 	return json.dumps(results)
 
@@ -331,7 +328,7 @@ def fold(current_session_id, player_id):
 				current_game_state.is_raising_allowed = False 
 		
 
-	clean_up(current_session_id, seat_num, current_game_state, current_session)
+		clean_up(current_session_id, seat_num, current_game_state, current_session)
 
 
 	return 'Success.'
@@ -393,23 +390,22 @@ def player_raise(current_session_id, player_id, raise_size):
 	current_game_state = current_hand.game_state
 	current_player_object = current_game_state.get_player_at_seat(seat_num)
 
-	if current_player_object == current_game_state.player_to_act:
-		if current_game_state.raising_allowed == True:
-			if current_player_object == current_game_state.player_to_act:
+	if current_game_state.raising_allowed == True:
+		if current_player_object == current_game_state.player_to_act:
 
-				#This player is making a valid raise so set as the last_valid_raiser
-				current_game_state.last_valid_raiser = current_player_object
+			#This player is making a valid raise so set as the last_valid_raiser
+			current_game_state.last_valid_raiser = current_player_object
 
-				#update player total and current bet to include raise
-				#reduce stack_size by the raise amount
-				current_player.stack_size = current_player.stack_size - (raise_size - current_player_object.current_bet)
-				current_player_object.stack_size = current_player_object.stack_size - (raise_size - current_player_object.current_bet)
+			#update player total and current bet to include raise
+			#reduce stack_size by the raise amount
+			current_player.stack_size = current_player.stack_size - (raise_size - current_player_object.current_bet)
+			current_player_object.stack_size = current_player_object.stack_size - (raise_size - current_player_object.current_bet)
 
-				#update the player_objects current and total bet for this hand/street
-				current_player_object.total_bet = current_player_object.total_bet + (raise_size - current_player_object.current_bet)
-				current_player_object.current_bet = raise_size
+			#update the player_objects current and total bet for this hand/street
+			current_player_object.total_bet = current_player_object.total_bet + (raise_size - current_player_object.current_bet)
+			current_player_object.current_bet = raise_size
 
-				clean_up(current_session_id, seat_num, current_game_state, current_session)
+			clean_up(current_session_id, seat_num, current_game_state, current_session)
 
 
 	return 'Success.'
@@ -763,9 +759,6 @@ def make_new_game_state(current_session_id, new_button_position, small_blind):
 				player = Player.query.filter_by(poker_session_id = current_session_id, seat_num = player_object.seat_num).first()
 				player.stack_size = player.stack_size - player_object.current_bet
 
-		# # set player to act as UTG
-		# new_game_state.player_to_act = new_game_state.get_live_players()[3 % len(new_game_state.get_live_players())]
-
 		db.session.commit()
 
 		return new_game_state
@@ -845,7 +838,6 @@ def get_game_state_dict(current_session_id):
 
 def clean_up(current_session_id, seat_num, current_game_state, current_session):
 	#Check to see if action is closed or not given the input gamestate/session. Adjust gamestate accordingly.
-
 
 	#check if hand is over:
 	if current_game_state.is_action_closed() and current_game_state.street == 3:

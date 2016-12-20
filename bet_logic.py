@@ -120,7 +120,7 @@ class GameState:
 				return False
 
 		## check to see if action should go to the big blind for his option preflop.
-		if self.street == 0:
+		if self.street == 0 and live_players[0].current_bet < 4*self.small_blind:
 
 			##check if it is not heads up
 			if len(self.player_list) >2:

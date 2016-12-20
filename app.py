@@ -813,7 +813,10 @@ def get_game_state_dict(current_session_id):
 		#these keys correspond to single objects not other dictionaries
 		results['admin_seat'] = admin_seat
 		results['playable_table'] = True
-		results['seat_to_act'] = current_game_state.player_to_act.seat_num
+		if current_game_state.player_to_act:
+			results['seat_to_act'] = current_game_state.player_to_act.seat_num
+		else:
+			results['seat_to_act'] = None
 		results['is_raising_allowed'] = current_game_state.raising_allowed
 		results['button_seat'] = current_game_state.button_position
 		results['total_pot'] = current_game_state.get_total_pot()
@@ -842,6 +845,8 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session):
 	#check if hand is over:
 	if current_game_state.is_action_closed() and current_game_state.street == 3:
 
+		current_game_state.player_to_act = None
+
 		pot_list = current_game_state.get_all_winnings()
 
 		if len(current_game_state.get_unfolded_players()) >= 2:
@@ -866,6 +871,8 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session):
 	#check if action is over but it is not on the river
 	elif current_game_state.is_action_closed() and current_game_state.street < 3:
 
+		current_game_state.player_to_act = None
+
 		##check to see if hand is over due to all players all-in
 		if len(current_game_state.get_live_players()) < 2 and len(current_game_state.get_unfolded_players()) > 1:
 
@@ -878,8 +885,6 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session):
 
 		##check to see if hand is over due to all but one player folding
 		elif len(current_game_state.get_unfolded_players()) < 2:
-
-			#current_game_state.set_showing_players()
 
 			current_player_object = current_game_state.get_unfolded_players()[0]
 			current_player = Player.query.filter_by(poker_session_id = current_session_id, seat_num = current_player_object.seat_num).first()

@@ -120,16 +120,16 @@ class GameState:
 				return False
 
 		## check to see if action should go to the big blind for his option preflop.
-		if self.street == 0 and live_players[0].current_bet < self.small_blind*4:
+		if self.street == 0 and live_players[0].current_bet < 4*self.small_blind:
 
-			##check if it is heads up
-			if len(self.player_list) >2 :
+			##check if it is not heads up
+			if len(self.player_list) >2:
 
-			##here player_to_act is the player that fired the route. Must check if that player is the small blind 
-			# if the small blind has just called, do not go to flop, must send action to big blind
-				if live_players[0].seat_num == self.button_position and self.player_to_act == live_players[1]:
+			## Here, player_to_act is the player that fired the route. Must check if that player is the small blind 
+			## It is impossible for small blind to close action preflop, so if the player_to_act is the SB, return False
+				if self.player_list[0].seat_num == self.button_position and self.player_to_act == self.player_list[1]:
 					return False
-				if live_players[0].seat_num != self.button_position and self.player_to_act == live_players[0]:
+				if self.player_list[0].seat_num != self.button_position and self.player_to_act == self.player_list[0]:
 					return False
 
 			# if it is heads up, then the preflop action is reversed. Must check to see if button has called-- not small blind

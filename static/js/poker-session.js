@@ -447,6 +447,8 @@ function updateDisplay(results) {
 			if($('#hole-cards-row').has('.card').length !== 0){
 				$('#hole-cards-row').find('.card').remove();
 			}
+			// add folded class so that adding to stack is activated
+			$( '.player-dash' ).addClass('folded');
 			// remove action-on styling
 			$( '.player-dash' ).removeClass('action-on');
 			// If player is folded and currently playing, it has the
@@ -464,6 +466,8 @@ function updateDisplay(results) {
 			if($('#sit-out-button').length !== 0) {
 				$('#sit-out-button').remove();
 			}
+			// remove folded class to deactivate adding to stack
+			$( '.player-dash' ).removeClass('folded');
 			// Check if this player can bet
 			if(results.can_bet[playerSeatNum]) {
 				// If can bet, then remove the raise,
@@ -629,6 +633,8 @@ function updateDisplay(results) {
 		if($('.dash-button').length !== 0) {
 			$('.dash-button').remove();
 		}
+		// add folded class so that adding to stack is activated
+		$( '.player-dash' ).addClass('folded');
 		// remove action-on styling
 		$( '.player-dash' ).removeClass('action-on');
 		// if this player has a large enough stack to play again
@@ -857,9 +863,11 @@ function addPlayer(seat_num) {
 	});
 
 	$('.player-dash').hover(function() {
+		console.log("CAN ADD: " + canAddToStack(0));
 		if(canAddToStack(0)) {
 			// Fade in button when mouse hovers over byline
 			$(this).find('.byline-button').fadeIn(200);
+			console.log($(this).find('.byline-button'));
 		}
     	}, 
     	function(){
@@ -879,6 +887,7 @@ function canAddToStack(seat_num) {
 	if(seat_num === 0) {
 		selectedPlayerIsFolded = $('.player-dash').hasClass('folded');
 	}
+	console.log("DASH FOLD: " + $('.player-dash').hasClass('folded'));
 	var currentPlayerIsAdmin = $( "#is-admin" ).attr("data") === 'True';
 	return selectedPlayerIsFolded && currentPlayerIsAdmin && !pause_in_session;
 }

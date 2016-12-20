@@ -99,7 +99,7 @@
                 </div> -->
             </div>
         </div>
-        <div class="col-xs-5 col-centered player-dash {% if results['seat_to_act'] == results['player'].seat_num %}action-on {% endif %} folded">
+        <div class="col-xs-5 col-centered player-dash {% if results['seat_to_act'] == results['player'].seat_num %}action-on {% endif %} {% if results['folded_players'] and results['folded_players'][results['player'].seat_num] %}folded {% endif %}">
             <div class="col-xs-3 col-centered pot-dash">
                 <div class="dash-title small-text">Pot:</div>
                 {% if results['session'].poker_hand %}
@@ -113,11 +113,9 @@
                     <div class="chip-text dash">D</div>
                 </div>
             {% endif %}
-            {% if results['folded_players'] and results['folded_players'][results['player'].seat_num] %}
-                <div class="byline-button dash" onclick="addToPlayerStack(0)">
-                    <div class="middle-text dash">+</div>
-                </div>
-            {% endif %}
+            <div class="byline-button dash" onclick="addToPlayerStack(0)">
+                <div class="middle-text dash">+</div>
+            </div>
             <div class="col-xs-6" style="height: 100%">
                 <div id="dash-stack-row" class="flex-row baseline" style="margin-bottom: 5px;">
                     <img src="{{ url_for('static', filename = 'img/column-chart.png') }}" style="height: 25px; transform: translateY(10%);">

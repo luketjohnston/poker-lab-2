@@ -20,7 +20,6 @@ REDIS_CHAN = 'gamestate'
 # set up sockets
 sockets = Sockets(app)
 redis = redis.from_url(REDIS_URL)
-print os.environ
 
 
 from models import *
@@ -38,6 +37,11 @@ from copy import deepcopy
 @app.route('/')
 def index():
 	return render_template('index.html')
+
+
+@app.route('/1')
+def first():
+	return Player.query[0].username
 
 
 @app.route('/create-session/', methods=['POST'])
@@ -613,53 +617,46 @@ def inbox(ws):
 		app.logger.info(u'Received message: {}'.format(message))
 		message = json.loads(message)
 		app.logger.info(u'Inserting message: {}'.format(message))
+		gs = retrieve_gamestate(message['session_id'], message['user_id'])
 		if message['func'] == 'add-player':
 			add_player(message['session_id'], message['user_id'], 
 				message['email'], message['seat_num'])
-			gs = retrieve_gamestate(message['session_id'], message['user_id'])
 			app.logger.info(u'Gamestate: {}'.format(gs))
-		elif message['func'] == 'deal-hand':
-			deal_hand(message['session_id'])
-			gs = retrieve_gamestate(message['session_id'], message['user_id'])
-			app.logger.info(u'Gamestate: {}'.format(gs))
-		elif message['func'] == 'check':
-			check(message['session_id'], message['user_id'])
-			gs = retrieve_gamestate(message['session_id'], message['user_id'])
-			app.logger.info(u'Gamestate: {}'.format(gs))
-		elif message['func'] == 'call':
-			call(message['session_id'], message['user_id'])
-			gs = retrieve_gamestate(message['session_id'], message['user_id'])
-			app.logger.info(u'Gamestate: {}'.format(gs))
-		elif message['func'] == 'bet':
-			bet(message['session_id'], message['user_id'],
-				message['bet_amount'])
-			gs = retrieve_gamestate(message['session_id'], message['user_id'])
-			app.logger.info(u'Gamestate: {}'.format(gs))
-		elif message['func'] == 'raise':
-			player_raise(message['session_id'], message['user_id'],
-				message['raise_amount'])
-			gs = retrieve_gamestate(message['session_id'], message['user_id'])
-			app.logger.info(u'Gamestate: {}'.format(gs))
-		elif message['func'] == 'all-in':
-			all_in(message['session_id'], message['user_id'])
-			gs = retrieve_gamestate(message['session_id'], message['user_id'])
-			app.logger.info(u'Gamestate: {}'.format(gs))
-		elif message['func'] == 'fold':
-			fold(message['session_id'], message['user_id'])
-			gs = retrieve_gamestate(message['session_id'], message['user_id'])
-			app.logger.info(u'Gamestate: {}'.format(gs))
-		elif message['func'] == 'make-new-hand':
-			make_new_hand(message['session_id'], message['user_id'])
-			gs = retrieve_gamestate(message['session_id'], message['user_id'])
-			app.logger.info(u'Gamestate: {}'.format(gs))
+		
 		elif message['func'] == 'add-chips':
 			add_chips(message['session_id'], message['seat_num'], message['chip_amount'])
-			gs = retrieve_gamestate(message['session_id'], message['user_id'])
 			app.logger.info(u'Gamestate: {}'.format(gs))
 		elif message['func'] == 'toggle-sit-out':
 			toggle_sit_out(message['session_id'], message['user_id'])
-			gs = retrieve_gamestate(message['session_id'], message['user_id'])
 			app.logger.info(u'Gamestate: {}'.format(gs))
+
+		if not gs['pause_for_hand_end']:
+			if message['func'] == 'deal-hand':
+				deal_hand(message['session_id'])
+				app.logger.info(u'Gamestate: {}'.format(gs))
+			elif message['func'] == 'check':
+				check(message['session_id'], message['user_id'])
+				app.logger.info(u'Gamestate: {}'.format(gs))
+			elif message['func'] == 'call':
+				call(message['session_id'], message['user_id'])
+				app.logger.info(u'Gamestate: {}'.format(gs))
+			elif message['func'] == 'bet':
+				bet(message['session_id'], message['user_id'],
+					message['bet_amount'])
+				app.logger.info(u'Gamestate: {}'.format(gs))
+			elif message['func'] == 'raise':
+				player_raise(message['session_id'], message['user_id'],
+					message['raise_amount'])
+				app.logger.info(u'Gamestate: {}'.format(gs))
+			elif message['func'] == 'all-in':
+				all_in(message['session_id'], message['user_id'])
+				app.logger.info(u'Gamestate: {}'.format(gs))
+			elif message['func'] == 'fold':
+				fold(message['session_id'], message['user_id'])
+				app.logger.info(u'Gamestate: {}'.format(gs))
+			elif message['func'] == 'make-new-hand':
+				make_new_hand(message['session_id'], message['user_id'])
+				app.logger.info(u'Gamestate: {}'.format(gs))
 		
 		if gs:
 			redis.publish(REDIS_CHAN, gs)

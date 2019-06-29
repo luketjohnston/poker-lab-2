@@ -18,6 +18,7 @@ inbox.onmessage = function(message) {
 	var sessionID = pathParts[1];
 	console.log(data['session_id']);
 	console.log(sessionID);
+	console.log(data)
 	if(data['session_id'] === sessionID) {
 		gamestate_dict = data;
 		if(data['pause_for_hand_end']) {
@@ -109,6 +110,7 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 			var seat = $( "#seat-"+visIdx );
 			// If that seat is filled
 			if(results.filled_seats[i]) {
+				console.log(i)
 				if(seat.hasClass("unoccupied")) {
 					seat.removeClass("unoccupied");
 				}
@@ -391,6 +393,7 @@ function createCardDiv(cardObj) {
 
 
 function updateDisplay(results) {
+	console.log('Double dunkers')
 	// Get the seat number of the player running this instance
 	var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
 	var pokerTable = $( ".poker-table" );
@@ -836,7 +839,7 @@ function addPlayer(seat_num) {
 					confirmButtonColor: '#7EBDC2',
 				},
 				function() {
-					// location.replace("/booker/profile/?tab=group");
+					// location.replace(...);
 				});   
     		}, 2000);
 		}
@@ -847,35 +850,35 @@ function addPlayer(seat_num) {
 	$('.byline-button').hide();
 
 
-	$('.player-byline').hover(function() {
-		var seat_num = parseInt(this.id.substring(7));
-		if(canAddToStack(seat_num)) {
-			// Fade in button when mouse hovers over byline
-			$(this).find('.byline-button').fadeIn(200);
-		}
-    	}, 
-    	function(){
-    		var seat_num = parseInt(this.id.substring(7));
-    		if(canAddToStack(seat_num)) {
-    			// Fade out button when mouse leaves byline
-    			$(this).find('.byline-button').fadeOut(200);
-    	}
-	});
+	// $('.player-byline').hover(function() {
+	// 	var seat_num = parseInt(this.id.substring(7));
+	// 	if(canAddToStack(seat_num)) {
+	// 		// Fade in button when mouse hovers over byline
+	// 		$(this).find('.byline-button').fadeIn(200);
+	// 	}
+ //    	}, 
+ //    	function(){
+ //    		var seat_num = parseInt(this.id.substring(7));
+ //    		if(canAddToStack(seat_num)) {
+ //    			// Fade out button when mouse leaves byline
+ //    			$(this).find('.byline-button').fadeOut(200);
+ //    	}
+	// });
 
-	$('.player-dash').hover(function() {
-		console.log("CAN ADD: " + canAddToStack(0));
-		if(canAddToStack(0)) {
-			// Fade in button when mouse hovers over byline
-			$(this).find('.byline-button').fadeIn(200);
-			console.log($(this).find('.byline-button'));
-		}
-    	}, 
-    	function(){
-    		if(canAddToStack(0)) {
-    			// Fade out button when mouse leaves byline
-    			$(this).find('.byline-button').fadeOut(200);
-    		}
-	});
+	// $('.player-dash').hover(function() {
+	// 	console.log("CAN ADD: " + canAddToStack(0));
+	// 	if(canAddToStack(0)) {
+	// 		// Fade in button when mouse hovers over byline
+	// 		$(this).find('.byline-button').fadeIn(200);
+	// 		console.log($(this).find('.byline-button'));
+	// 	}
+ //    	}, 
+ //    	function(){
+ //    		if(canAddToStack(0)) {
+ //    			// Fade out button when mouse leaves byline
+ //    			$(this).find('.byline-button').fadeOut(200);
+ //    		}
+	// });
 
 })();
 

@@ -630,35 +630,37 @@ def inbox(ws):
 			toggle_sit_out(message['session_id'], message['user_id'])
 			app.logger.info(u'Gamestate: {}'.format(gs))
 
-		if not gs['pause_for_hand_end']:
-			if message['func'] == 'deal-hand':
-				deal_hand(message['session_id'])
-				app.logger.info(u'Gamestate: {}'.format(gs))
-			elif message['func'] == 'check':
-				check(message['session_id'], message['user_id'])
-				app.logger.info(u'Gamestate: {}'.format(gs))
-			elif message['func'] == 'call':
-				call(message['session_id'], message['user_id'])
-				app.logger.info(u'Gamestate: {}'.format(gs))
-			elif message['func'] == 'bet':
-				bet(message['session_id'], message['user_id'],
-					message['bet_amount'])
-				app.logger.info(u'Gamestate: {}'.format(gs))
-			elif message['func'] == 'raise':
-				player_raise(message['session_id'], message['user_id'],
-					message['raise_amount'])
-				app.logger.info(u'Gamestate: {}'.format(gs))
-			elif message['func'] == 'all-in':
-				all_in(message['session_id'], message['user_id'])
-				app.logger.info(u'Gamestate: {}'.format(gs))
-			elif message['func'] == 'fold':
-				fold(message['session_id'], message['user_id'])
-				app.logger.info(u'Gamestate: {}'.format(gs))
-			elif message['func'] == 'make-new-hand':
-				make_new_hand(message['session_id'], message['user_id'])
-				app.logger.info(u'Gamestate: {}'.format(gs))
+		# if not gs['pause_for_hand_end']:
+		elif message['func'] == 'deal-hand':
+			deal_hand(message['session_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'check':
+			check(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'call':
+			call(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'bet':
+			bet(message['session_id'], message['user_id'],
+				message['bet_amount'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'raise':
+			player_raise(message['session_id'], message['user_id'],
+				message['raise_amount'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'all-in':
+			all_in(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'fold':
+			fold(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+		elif message['func'] == 'make-new-hand':
+			make_new_hand(message['session_id'], message['user_id'])
+			app.logger.info(u'Gamestate: {}'.format(gs))
+
+		gs = retrieve_gamestate(message['session_id'], message['user_id'])
 		
-		if gs:
+		if not gs is None:
 			redis.publish(REDIS_CHAN, gs)
 
 

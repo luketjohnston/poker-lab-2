@@ -8,7 +8,8 @@ import gevent
 from flask_sockets import Sockets
 
 app = Flask(__name__)
-app.config.from_object(os.environ['APP_SETTINGS'])
+# TODO is there any important APP_SETTINGS here?
+# app.config.from_object(os.environ['APP_SETTINGS'])
 # set up db
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -46,6 +47,7 @@ def first():
 
 @app.route('/create-session/', methods=['POST'])
 def create_session():
+	print("made it here!!")
 
 	new_admin_player = Player(username = request.form['username'].lower(),
 		seat_num = 1, 
@@ -65,6 +67,8 @@ def create_session():
 	new_admin_player.poker_session = new_session
 
 
+	print(db.metadata.tables)
+	db.create_all()
 	db.session.add(new_session)
 	db.session.add(new_admin_player)
 	db.session.commit()

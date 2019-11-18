@@ -1,0 +1,9 @@
+I ignore requirements, just try running and install missing packages until it works
+
+I comment out the line in app.py that loads APP_SETTINGS environment variable
+
+download postgresql and start it
+
+download pgadmin and create poker_lab_dev database (working on this)
+
+set REDIS_URL environment variable to redis://127.0.0.1:6379/

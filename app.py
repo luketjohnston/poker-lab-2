@@ -47,8 +47,6 @@ def first():
 
 @app.route('/create-session/', methods=['POST'])
 def create_session():
-	print("made it here!!")
-
 	new_admin_player = Player(username = request.form['username'].lower(),
 		seat_num = 1, 
 		has_button = False, 
@@ -67,7 +65,6 @@ def create_session():
 	new_admin_player.poker_session = new_session
 
 
-	print(db.metadata.tables)
 	db.create_all()
 	db.session.add(new_session)
 	db.session.add(new_admin_player)
@@ -90,7 +87,6 @@ def show_gamestate(current_session_id):
 
 
 def retrieve_gamestate(current_session_id, player_id):
-
 	#retrieve the current session
 	
 	
@@ -166,25 +162,10 @@ def poker_room(current_session_id, player_id):
 		id = player_id).first()
 
 	results = game_and_session_info(current_session)
-	# if results['currently_playing_seats'][current_player.seat_num]:
-	# 	game_state = current_session.poker_hand.game_state
-	# 	results['hole_cards'] = [card.get_string_tuple() for card in \
-	# 		game_state.get_player_at_seat(current_player.seat_num).hole_cards]
 
 	current_player.stack_size = int(current_player.stack_size)
 	results['player'] = current_player
 	results['session'] = current_session
-	# results['other_hole_cards'] = [None,[('2', 'hearts'), ('2', 'hearts')],
-	# [('2', 'hearts'), ('2', 'hearts')],
-	# [('2', 'hearts'), ('2', 'hearts')],
-	# [('2', 'hearts'), ('2', 'hearts')],
-	# [('2', 'hearts'), ('2', 'hearts')],
-	# [('2', 'hearts'), ('2', 'hearts')],
-	# [('2', 'hearts'), ('2', 'hearts')],
-	# [('2', 'hearts'), ('2', 'hearts')],
-	# [('2', 'hearts'), ('2', 'hearts')],
-	# [('2', 'hearts'), ('2', 'hearts')]]
-	# results['other_hole_cards'] = [[]*10]
 
 	return render_template('poker-session.html', results=results)
 
@@ -227,6 +208,8 @@ def add_chips(current_session_id, seat_num, chip_amount):
 	db.session.commit()
 
 def toggle_sit_out(current_session_id, player_id):
+        # TODO: make it so you can only do this if you're not currently in a hand,
+	# or possibly so you fold when it gets to you
 
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
 	current_player = Player.query.filter_by(id = player_id, poker_session_id = current_session_id,).first()
@@ -236,6 +219,8 @@ def toggle_sit_out(current_session_id, player_id):
 
 # @app.route('/<current_session_id>/deal-hand/', methods=['POST'])
 def deal_hand(current_session_id):
+	# NOTE: this is only called from the "deal em Cowboy" button. The client
+	# doesn't have to call this before every hand. Probably should rename it...
 
 	#retrieve current session and number of players
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
@@ -261,7 +246,6 @@ def deal_hand(current_session_id):
 	return 'Success.'
 
 
-# @app.route('/<current_session_id>/<player_id>/<bet_size>/bet/', methods=['POST'])
 def bet(current_session_id, player_id, bet_size):
 
 
@@ -277,7 +261,9 @@ def bet(current_session_id, player_id, bet_size):
 	current_player_object = current_game_state.get_player_at_seat(seat_num)
 	current_street = current_game_state.street
 
+	
 	if current_player_object == current_game_state.player_to_act:
+		# TODO need to add check that bet is valid and an integer
 
 		#If the player is able to bet, it means no one has entered the pot and thus
 		#the player must be the last_valid_raiser
@@ -298,16 +284,12 @@ def bet(current_session_id, player_id, bet_size):
 		old_actor = current_game_state.player_to_act ## this should also be current_player_object. front end should
 														## only trigger this route from player whose action it is 										
 		next_actor = current_game_state.get_live_player_to_left(old_actor)
-		current_game_state.player_to_act = next_actor
-		
-		current_hand.game_state = deepcopy(current_game_state)
 	
 		db.session.commit()
 
 	return 'Success.'
 
 
-# @app.route('/<current_session_id>/<player_id>/fold/', methods=['POST'])
 def fold(current_session_id, player_id):
 	player_id = int(player_id)
 
@@ -318,6 +300,9 @@ def fold(current_session_id, player_id):
 	seat_num = current_player.seat_num
 	current_game_state = current_hand.game_state
 	current_player_object = current_game_state.get_player_at_seat(seat_num)
+	
+	# TODO I think these routes can be called multiple times simultaneously for a single
+	# session, which will lead to errors.
 
 
 	if current_player_object == current_game_state.player_to_act:
@@ -342,7 +327,6 @@ def fold(current_session_id, player_id):
 	return 'Success.'
 
 
-# @app.route('/<current_session_id>/<player_id>/call/', methods=['POST'])
 def call(current_session_id, player_id):
 	player_id = int(player_id) 
 
@@ -386,7 +370,6 @@ def call(current_session_id, player_id):
 	return 'Success.'
 
 
-# @app.route('/<current_session_id>/<player_id>/<raise_size>/raise/', methods=['POST'])
 def player_raise(current_session_id, player_id, raise_size):
 	player_id = int(player_id)
 	raise_size = float(raise_size)
@@ -397,6 +380,8 @@ def player_raise(current_session_id, player_id, raise_size):
 	seat_num = current_player.seat_num
 	current_game_state = current_hand.game_state
 	current_player_object = current_game_state.get_player_at_seat(seat_num)
+
+	# TODO check that raise is valid and convert to integer
 
 	if current_game_state.raising_allowed == True:
 		if current_player_object == current_game_state.player_to_act:
@@ -419,7 +404,6 @@ def player_raise(current_session_id, player_id, raise_size):
 	return 'Success.'
 
 
-# @app.route('/<current_session_id>/<player_id>/check/', methods=['POST'])
 def check(current_session_id, player_id):
 	player_id = int(player_id)
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
@@ -436,7 +420,6 @@ def check(current_session_id, player_id):
 	return 'Success.'
 
 
-# @app.route('/<current_session_id>/<player_id>/all-in/', methods=['POST'])
 def all_in(current_session_id, player_id):
 
 	player_id = int(player_id)
@@ -471,6 +454,7 @@ def all_in(current_session_id, player_id):
 
 
 
+# TODO: this should not be able to be called from the user. Needs to happen automatically, through clean_up.
 def make_new_hand(current_session_id, player_id):
 
 	#retrieve the current session and gamestate
@@ -523,38 +507,6 @@ def make_new_hand(current_session_id, player_id):
 		#being played
 		current_session.poker_hand = None
 		db.session.commit()
-
-	return 'Success.'
-
-
-# @app.route('/<current_session_id>/<seat_num>/continue-playing/')
-def continue_playing(current_session_id, seat_num):
-	 #move button and start new hand
-
-	current_session = PokerSession.query.filter_by(id = current_session_id).first()
-	current_hand = current_session.poker_hand
-	current_game_state = current_hand.game_state
-
-	current_game_state.pause_for_street_end = False
-
-	current_session.poker_hand.game_state = deepcopy(current_game_state)
-
-	return 'Success.'
-
-
-@app.route('/<current_session_id>/<seat_num>/show-cards')
-def show_cards(current_session_id, seat_num):
-
-	current_session = PokerSession.query.filter_by(id = current_session_id).first()
-	current_hand = current_session.poker_hand
-	current_game_state = current_hand.game_state
-	current_player_object = current_game_state.get_player_at_seat(seat_num)
-
-	if current_player_object == current_game_state.player_to_act:
-		current_player_object.is_showing = True
-		current_game_state.set_showing_players()
-		current_session.poker_hand.game_state = deepcopy(current_game_state)
-
 
 	return 'Success.'
 
@@ -941,4 +893,5 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session):
 
 
 if __name__ == '__main__':
+	# TODO add Threaded=False argument? 
 	app.run(debug = True)

@@ -12,26 +12,27 @@ var gamestate = {};
 var pause_in_session = false;
 
 inbox.onmessage = function(message) {
-	var data = JSON.parse(message.data);
+	console.log("in onmessage")
 	var pathname = window.location.pathname;
 	var pathParts = pathname.split( '/' );
 	var sessionID = pathParts[1];
-	console.log(data['session_id']);
-	console.log(sessionID);
-	console.log(data)
-	if(data['session_id'] === sessionID) {
-		gamestate_dict = data;
-		if(data['pause_for_hand_end']) {
-			pause_in_session = true;
-			console.log("BEGIN PAUSE");
-			updateDisplay(data);
-			$('#sit-out-button').addClass('disabled');
-			$('#sit-in-button').addClass('disabled');
-			window.setTimeout(function() {startNewHand(data);}, 8000);
-		} else {
-			updateDisplay(data);
-		}
-	}
+	message.data.text().then(function(text) {
+	  var data = JSON.parse(text);
+	  console.log(data);
+	  if(data['session_id'] === sessionID) {
+	  	gamestate_dict = data;
+	  	if(data['pause_for_hand_end'] && !pause_in_session) {
+	  		pause_in_session = true;
+	  		console.log("BEGIN PAUSE");
+	  		updateDisplay(data);
+	  		$('#sit-out-button').addClass('disabled');
+	  		$('#sit-in-button').addClass('disabled');
+	  		window.setTimeout(function() {startNewHand(data);}, 8000);
+	  	} else {
+	  		updateDisplay(data);
+	  	}
+	  }
+	});
 };
 
 
@@ -709,6 +710,7 @@ function check() {
 
 
 function bet() {
+	// TODO add check that bet is large enough
 	var betAmount = parseFloat($( '#bet-input' ).val());
 	var stackAmount = parseFloat($( '.dash-stack' ).text());
 	// console.log('Bet: ' + betAmount);
@@ -743,6 +745,7 @@ function call() {
 
 
 function raise() {
+	// TODO: add check that raise amount is large enough
 	var raiseAmount = parseFloat($( '#raise-input' ).val());
 	var stackAmount = parseFloat($( '.dash-stack' ).text());
 	var currentBet = 0;
@@ -826,11 +829,13 @@ function addPlayer(seat_num) {
 			var pathParts = pathname.split( '/' );
 			var sessionID = pathParts[1];
 			var userID = pathParts[2];
-			outbox.send(JSON.stringify({ 	func: 'add-player', 
+			var sentthing = JSON.stringify({ 	func: 'add-player', 
 											session_id: sessionID, 
 											user_id: userID, 
 											email: email,
-											seat_num: seat_num}));
+											seat_num: seat_num});
+			console.log("sentthing: " + sentthing)
+			outbox.send(sentthing);
 			setTimeout(function(){ 
 				swal({
 					title: "Invite sent to " + email + "!",
@@ -885,6 +890,7 @@ function addPlayer(seat_num) {
 
 
 function canAddToStack(seat_num) {
+	// TODO: fix this
 	var seatObj = $('#seat-' + seat_num);
 	var selectedPlayerIsFolded = seatObj.hasClass('folded');
 	if(seat_num === 0) {

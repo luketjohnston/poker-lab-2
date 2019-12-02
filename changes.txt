@@ -7,3 +7,5 @@ download postgresql and start it
 download pgadmin and create poker_lab_dev database (working on this)
 
 set REDIS_URL environment variable to redis://127.0.0.1:6379/
+
+made "myProcfile" that runs instead of app.py, see readme

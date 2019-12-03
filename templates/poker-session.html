@@ -63,13 +63,13 @@
                                     <div class="bet-num">{{results['current_bets'][i]}}</div>
                                 </div>
                             {% endif %}
-                            {% if results['session'].poker_hand %}
                                 <div class="show-cards-row flex-row" id="show-cards-row-{{vis_idx}}">
-                                    {% for card in results['showing_cards'][i] %}
-                                        {% include 'card.html' %}
-                                    {% endfor %}
+                            	    {% if results['session'].poker_hand %}
+                                        {% for card in results['showing_cards'][i] %}
+                                            {% include 'card.html' %}
+                                        {% endfor %}
+                                    {% endif %}
                                 </div>
-                            {% endif %}
                         {% else %}
                             <div class="seat unoccupied" id="seat-{{vis_idx}}">
                                 <div class="seat-title unoccupied {% if results['player'].is_admin %}mutable {% endif %}" {% if results['player'].is_admin %}onclick="addPlayer({{i}})"{% endif %}>+</div>

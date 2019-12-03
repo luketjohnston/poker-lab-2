@@ -321,7 +321,7 @@ def fold(current_session_id, player_id):
 				current_game_state.is_raising_allowed = False 
 		
 
-		clean_up(current_session_id, seat_num, current_game_state, current_session)
+		clean_up(current_session_id, seat_num, current_game_state, current_session, player_id)
 
 
 	return 'Success.'
@@ -364,7 +364,7 @@ def call(current_session_id, player_id):
 			current_player_object.total_bet = current_player_object.total_bet + (max_current_bet - current_player_object.current_bet)
 			current_player_object.current_bet = max_current_bet
 
-			clean_up(current_session_id, seat_num, current_game_state, current_session)
+			clean_up(current_session_id, seat_num, current_game_state, current_session, player_id)
 
 
 	return 'Success.'
@@ -398,7 +398,7 @@ def player_raise(current_session_id, player_id, raise_size):
 			current_player_object.total_bet = current_player_object.total_bet + (raise_size - current_player_object.current_bet)
 			current_player_object.current_bet = raise_size
 
-			clean_up(current_session_id, seat_num, current_game_state, current_session)
+			clean_up(current_session_id, seat_num, current_game_state, current_session, player_id)
 
 
 	return 'Success.'
@@ -415,7 +415,7 @@ def check(current_session_id, player_id):
 
 
 	if current_player_object == current_game_state.player_to_act:
-		clean_up(current_session_id, seat_num, current_game_state, current_session)
+		clean_up(current_session_id, seat_num, current_game_state, current_session, player_id)
 
 	return 'Success.'
 
@@ -448,14 +448,14 @@ def all_in(current_session_id, player_id):
 		current_player.stack_size = 0
 		current_player_object.is_all_in = True
 
-		clean_up(current_session_id, seat_num, current_game_state, current_session)
+		clean_up(current_session_id, seat_num, current_game_state, current_session, player_id)
 
 	return 'Success.'
 
 
 
 # TODO: this should not be able to be called from the user. Needs to happen automatically, through clean_up.
-def make_new_hand(current_session_id, player_id):
+def make_new_hand(current_session_id):
 
 	#retrieve the current session and gamestate
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
@@ -610,9 +610,9 @@ def inbox(ws):
 		elif message['func'] == 'fold':
 			fold(message['session_id'], message['user_id'])
 			app.logger.info(u'Gamestate: {}'.format(gs))
-		elif message['func'] == 'make-new-hand':
-			make_new_hand(message['session_id'], message['user_id'])
-			app.logger.info(u'Gamestate: {}'.format(gs))
+		#elif message['func'] == 'make-new-hand':
+		#	make_new_hand(message['session_id'])
+		#	app.logger.info(u'Gamestate: {}'.format(gs))
 
 		gs = retrieve_gamestate(message['session_id'], message['user_id'])
 		
@@ -794,7 +794,7 @@ def get_game_state_dict(current_session_id):
 		return results
 
 
-def clean_up(current_session_id, seat_num, current_game_state, current_session):
+def clean_up(current_session_id, seat_num, current_game_state, current_session, player_id):
 	#Check to see if action is closed or not given the input gamestate/session. Adjust gamestate accordingly.
 
 	#check if hand is over:
@@ -822,6 +822,13 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session):
 		current_session.poker_hand.game_state = deepcopy(current_game_state)
 
 		db.session.commit()
+		print("ending hand due at showdown. retrieving gamestate...")
+		gs = retrieve_gamestate(current_session_id, player_id)
+		print("finished retrieving gamestate that will be sent to client.")
+		print(gs)
+		redis.publish(REDIS_CHAN, gs)
+		gevent.sleep(7)
+		make_new_hand(current_session_id)
 
 	#check if action is over but it is not on the river
 	elif current_game_state.is_action_closed() and current_game_state.street < 3:
@@ -836,7 +843,7 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session):
 
 			db.session.commit()
 
-			clean_up(current_session_id, seat_num, current_session.poker_hand.game_state, current_session)
+			clean_up(current_session_id, seat_num, current_session.poker_hand.game_state, current_session, player_id)
 
 		##check to see if hand is over due to all but one player folding
 		elif len(current_game_state.get_unfolded_players()) < 2:
@@ -851,7 +858,11 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session):
 			current_game_state.pause_for_hand_end = True
 			current_session.poker_hand.game_state = deepcopy(current_game_state)
 
-			db.session.commit()
+			db.session.commit() 
+			gs = retrieve_gamestate(current_session_id, player_id)
+			redis.publish(REDIS_CHAN, gs)
+			gevent.sleep(7)
+			make_new_hand(current_session_id)
 
 		## check to see if action for street has closed, but the hand is not over
 		else:

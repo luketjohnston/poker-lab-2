@@ -9,7 +9,6 @@ if (window.location.protocol == "https:") {
 var inbox = new ReconnectingWebSocket(ws_scheme + location.host + "/receive");
 var outbox = new ReconnectingWebSocket(ws_scheme + location.host + "/submit");
 var gamestate = {};
-var pause_in_session = false;
 
 inbox.onmessage = function(message) {
 	console.log("in onmessage")
@@ -21,16 +20,11 @@ inbox.onmessage = function(message) {
 	  console.log(data);
 	  if(data['session_id'] === sessionID) {
 	  	gamestate_dict = data;
-	  	if(data['pause_for_hand_end'] && !pause_in_session) {
-	  		pause_in_session = true;
-	  		console.log("BEGIN PAUSE");
-	  		updateDisplay(data);
+	  	if(data['pause_for_hand_end']) {
 	  		$('#sit-out-button').addClass('disabled');
 	  		$('#sit-in-button').addClass('disabled');
-	  		window.setTimeout(function() {startNewHand(data);}, 8000);
-	  	} else {
-	  		updateDisplay(data);
-	  	}
+		}
+		updateDisplay(data);
 	  }
 	});
 };
@@ -38,29 +32,6 @@ inbox.onmessage = function(message) {
 
 
 
-function startNewHand(results) {
-	var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
-	pause_in_session = false;
-	console.log("END PAUSE");
-	if(results['admin_seat'] === playerSeatNum) {
-		var pathname = window.location.pathname;
-		var pathParts = pathname.split( '/' );
-		var sessionID = pathParts[1];
-		var userID = pathParts[2];
-		outbox.send(JSON.stringify({ 	func: 'make-new-hand', 
-										session_id: sessionID, 
-										user_id: userID,}));
-		$('#board-row').children().remove();
-		$('#hole-cards-row').children().remove();
-		$('.show-cards-row').children().remove();
-		$('.bet-info').remove();
-	} else {
-		$('#board-row').children().remove();
-		$('#hole-cards-row').children().remove();
-		$('.show-cards-row').children().remove();
-		$('.bet-info').remove();
-	}
-}
 
 function animateValueChange(startVal, endVal, displayObject) {
 	if(startVal !== endVal) {
@@ -216,7 +187,9 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 				// update showing cards
 				console.log('Show bet start: ' + showBet);
 				if(results.hasOwnProperty('showing_cards')) {
+					console.log("IN HERE SHOWING CARDS 1");
 					if(results.showing_cards.hasOwnProperty(i)) {
+						console.log("IN HASOWNPROPERTY 2");
 
 						var showCardsRow = $( "#show-cards-row-" + visIdx );
 						var showCards = showCardsRow.children('.card');
@@ -225,6 +198,8 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 						if(showCards.length !== 0) {
 							showCards.remove();
 						}
+						console.log(results.showing_cards);
+						console.log('above is results.showing_cards');
 						for(var j=0; j < results.showing_cards[i].length; j++) {
 							var card = createCardDiv(results.showing_cards[i][j]);
 							card.appendTo(showCardsRow);
@@ -392,8 +367,29 @@ function createCardDiv(cardObj) {
 	return card;
 }
 
+function startNewHand(results) {
+	var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
+	console.log("END PAUSE");
+	if(results['admin_seat'] === playerSeatNum) {
+		var pathname = window.location.pathname;
+		var pathParts = pathname.split( '/' );
+		var sessionID = pathParts[1];
+		var userID = pathParts[2];
+		outbox.send(JSON.stringify({ 	func: 'make-new-hand', 
+										session_id: sessionID, 
+										user_id: userID,}));
+	}
+	$('#board-row').children().remove();
+	$('#hole-cards-row').children().remove();
+	$('.show-cards-row').children().remove();
+	$('.bet-info').remove();
+}
 
 function updateDisplay(results) {
+
+	// just remove all board, we will add it back later
+	$('#board-row').children().remove();
+
 	console.log('Double dunkers')
 	// Get the seat number of the player running this instance
 	var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
@@ -898,7 +894,7 @@ function canAddToStack(seat_num) {
 	}
 	console.log("DASH FOLD: " + $('.player-dash').hasClass('folded'));
 	var currentPlayerIsAdmin = $( "#is-admin" ).attr("data") === 'True';
-	return selectedPlayerIsFolded && currentPlayerIsAdmin && !pause_in_session;
+	return selectedPlayerIsFolded && currentPlayerIsAdmin;
 }
 
 

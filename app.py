@@ -247,6 +247,7 @@ def deal_hand(current_session_id):
 
 
 def bet(current_session_id, player_id, bet_size):
+	print("IN BET 1")
 
 
 	player_id = int(player_id)
@@ -263,6 +264,7 @@ def bet(current_session_id, player_id, bet_size):
 
 	
 	if current_player_object == current_game_state.player_to_act:
+		print("IN BET 2")
 		# TODO need to add check that bet is valid and an integer
 
 		#If the player is able to bet, it means no one has entered the pot and thus
@@ -281,10 +283,13 @@ def bet(current_session_id, player_id, bet_size):
 
 		#Do not need to check if action has closed, because a bet can never close action
 		#So just move the player_to_act to next live player
-		old_actor = current_game_state.player_to_act ## this should also be current_player_object. front end should
-														## only trigger this route from player whose action it is 										
+		## Below "old_actor" should also be current_player_object. front end should 
+		## only trigger this route from player whose action it is 										
+		old_actor = current_game_state.player_to_act 
 		next_actor = current_game_state.get_live_player_to_left(old_actor)
-	
+		current_game_state.player_to_act = next_actor
+		current_hand.game_state = deepcopy(current_game_state)
+
 		db.session.commit()
 
 	return 'Success.'

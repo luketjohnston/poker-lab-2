@@ -54,6 +54,16 @@ def create_session():
 		stack_size = float(request.form['player-stack']))
 
 	#create dummy player for testing purposes
+	p1 = Player(username = 'Nimit',
+		seat_num = 2, 
+		has_button = False, 
+		is_admin = False,
+		stack_size = 200)
+	p2 = Player(username = 'Sam',
+		seat_num = 3, 
+		has_button = False, 
+		is_admin = False,
+		stack_size = 200)
 
 	#create new session
 	small_blind = float(request.form['small-blind'])
@@ -61,13 +71,14 @@ def create_session():
 		small_blind = small_blind, big_blind = 2*small_blind, 
 		max_buy_in = float(request.form['max-buy-in']))
 	#add admin to the session
-	new_session.players = [new_admin_player]
+	new_session.players = [new_admin_player, p1, p2]
 	new_admin_player.poker_session = new_session
+	p1.poker_session = new_session
+	p2.poker_session = new_session
 
 
 	db.create_all()
 	db.session.add(new_session)
-	db.session.add(new_admin_player)
 	db.session.commit()
 
 	return redirect(url_for('poker_room', current_session_id=new_session.id,
@@ -86,12 +97,11 @@ def show_gamestate(current_session_id):
 
 
 
-def retrieve_gamestate(current_session_id, player_id):
+def retrieve_gamestate(current_session_id):
 	#retrieve the current session
 	
 	
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
-	current_player = Player.query.filter_by(id = player_id).first()
 	results = game_and_session_info(current_session)
 
 	if current_session.poker_hand:
@@ -214,7 +224,7 @@ def toggle_sit_out(current_session_id, player_id):
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
 	current_player = Player.query.filter_by(id = player_id, poker_session_id = current_session_id,).first()
 
-	current_player.is_sitting_out = not current_player.is_sitting_out
+	current_player.sit_out_next_hand = not current_player.sit_out_next_hand
 	db.session.commit()
 
 # @app.route('/<current_session_id>/deal-hand/', methods=['POST'])
@@ -247,7 +257,6 @@ def deal_hand(current_session_id):
 
 
 def bet(current_session_id, player_id, bet_size):
-	print("IN BET 1")
 
 
 	player_id = int(player_id)
@@ -264,7 +273,6 @@ def bet(current_session_id, player_id, bet_size):
 
 	
 	if current_player_object == current_game_state.player_to_act:
-		print("IN BET 2")
 		# TODO need to add check that bet is valid and an integer
 
 		#If the player is able to bet, it means no one has entered the pot and thus
@@ -470,7 +478,7 @@ def make_new_hand(current_session_id):
 	#check if any players have busted 
 	for player in current_session.players:
 		if player.stack_size <= current_session.big_blind:
-			player.is_sitting_out = True
+			player.sit_out_next_hand = True
 
 	#Move the button to the next player that is not sitting out
 	#################################################
@@ -486,7 +494,7 @@ def make_new_hand(current_session_id):
 	#the last player to be assigned button is the closest to the next button as desired
 	new_button_seat = None
 	for player in db_player_list:
-		if player.is_sitting_out == False:
+		if player.sit_out_next_hand == False:
 			new_button_seat = player.seat_num
 	#################################################
 
@@ -506,12 +514,16 @@ def make_new_hand(current_session_id):
 
 		db.session.add(new_hand)
 		db.session.commit()
+		gs = retrieve_gamestate(current_session_id)
+		redis.publish(REDIS_CHAN, gs)
 	else:
 		#If there are not at least 2 players, new_game_state is None and the current hand should be set to None-- 
 		#methods that build the game_state dictionary rely on the poker hand being none if the game should stop
 		#being played
 		current_session.poker_hand = None
 		db.session.commit()
+		gs = retrieve_gamestate(current_session_id)
+		redis.publish(REDIS_CHAN, gs)
 
 	return 'Success.'
 
@@ -578,7 +590,7 @@ def inbox(ws):
 		app.logger.info(u'Received message: {}'.format(message))
 		message = json.loads(message)
 		app.logger.info(u'Inserting message: {}'.format(message))
-		gs = retrieve_gamestate(message['session_id'], message['user_id'])
+		gs = retrieve_gamestate(message['session_id'])
 		if message['func'] == 'add-player':
 			add_player(message['session_id'], message['user_id'], 
 				message['email'], message['seat_num'])
@@ -619,7 +631,7 @@ def inbox(ws):
 		#	make_new_hand(message['session_id'])
 		#	app.logger.info(u'Gamestate: {}'.format(gs))
 
-		gs = retrieve_gamestate(message['session_id'], message['user_id'])
+		gs = retrieve_gamestate(message['session_id'])
 		
 		if not gs is None:
 			redis.publish(REDIS_CHAN, gs)
@@ -654,13 +666,17 @@ def game_and_session_info(current_session):
 		results['currently_playing_seats'] = {i : False for i in range(1,11)}
 		for player in current_session.players:
 			results['currently_playing_seats'][player.seat_num] = \
-			player.seat_num in [x.seat_num for x in game_state.player_list] and not player.is_sitting_out
+			player.seat_num in [x.seat_num for x in game_state.player_list]
 			
 	else:
 		results = {'board': []}
 		results['currently_playing_seats'] = {i : False for i in range(1,11)}
 		results['playable_table'] = False
 		results['admin_seat'] = Player.query.filter_by(is_admin = True, poker_session_id = current_session.id).first().seat_num 
+
+	results['players_sitting_in_next_hand'] = 0
+	for player in current_session.players:
+		results['players_sitting_in_next_hand'] += not player.sit_out_next_hand
 
 	results['filled_seats'] = {i : False for i in range(1,11)}
 	
@@ -701,7 +717,7 @@ def make_new_game_state(current_session_id, new_button_position, small_blind):
 	#
 	players_in_hand = []
 	for i in range(0,num_players):
-		if current_session.players[i].is_sitting_out == False:
+		if current_session.players[i].sit_out_next_hand == False:
 			players_in_hand.append(PlayerObject(current_session.players[i].seat_num, current_session.players[i].stack_size, hole_cards = current_hole_cards[i]))
 
 
@@ -747,7 +763,6 @@ def get_game_state_dict(current_session_id):
 		folded_players = {}
 		min_raises = {}
 		showing_cards = {}
-		sitting_out_players = {}
 
 
 		for player in current_game_state.player_list:
@@ -763,9 +778,6 @@ def get_game_state_dict(current_session_id):
 				showing_cards[player.seat_num] = [card.get_string_tuple() for card in player.hole_cards]
 			else:
 				showing_cards[player.seat_num] = []
-
-		for db_player in current_session.players:
-			sitting_out_players[db_player.seat_num] = db_player.is_sitting_out
 
 
 		results = {}
@@ -794,7 +806,6 @@ def get_game_state_dict(current_session_id):
 		results['folded_players'] = folded_players
 		results['min_raises'] = min_raises
 		results['showing_cards'] = showing_cards
-		results['sitting_out_players'] = sitting_out_players
 
 		return results
 
@@ -827,13 +838,9 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session, 
 		current_session.poker_hand.game_state = deepcopy(current_game_state)
 
 		db.session.commit()
-		print("ending hand due at showdown. retrieving gamestate...")
-		gs = retrieve_gamestate(current_session_id, player_id)
-		print("finished retrieving gamestate that will be sent to client.")
-		print(gs)
+		gs = retrieve_gamestate(current_session_id)
 		redis.publish(REDIS_CHAN, gs)
-		gevent.sleep(7)
-		make_new_hand(current_session_id)
+		gevent.spawn_later(4, make_new_hand, current_session_id)
 
 	#check if action is over but it is not on the river
 	elif current_game_state.is_action_closed() and current_game_state.street < 3:
@@ -864,10 +871,9 @@ def clean_up(current_session_id, seat_num, current_game_state, current_session, 
 			current_session.poker_hand.game_state = deepcopy(current_game_state)
 
 			db.session.commit() 
-			gs = retrieve_gamestate(current_session_id, player_id)
+			gs = retrieve_gamestate(current_session_id)
 			redis.publish(REDIS_CHAN, gs)
-			gevent.sleep(7)
-			make_new_hand(current_session_id)
+			gevent.spawn_later(4, make_new_hand, current_session_id)
 
 		## check to see if action for street has closed, but the hand is not over
 		else:

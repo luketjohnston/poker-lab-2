@@ -28,6 +28,10 @@
         </a>
     </div>
     <div class="container">
+	<div id="sitout">
+		<input type="checkbox" name="sitout" onchange="toggleSitOut()" {% if results['player'].sit_out_next_hand %} checked {% endif %}></input>
+		<label for="sitout"> sit out next hand </label>
+	</div>
         <div class="session-title" >{{results['session'].name.upper()}} Poker Room</div>
         <div class="row inner-container">
             <div class="col-xs-12">
@@ -89,8 +93,12 @@
                         {% for card in results['board'] %}
                             {% include 'card.html' %}
                         {% endfor %}
-                    {% elif results['player'].is_admin %}
-                        <div class="start-button" onclick="dealHand()">Deal 'Em, Cowboy!</div>
+                    {% elif results['player'].is_admin and (results['players_sitting_in_next_hand'] > 1) %}
+                        <div class="start-button" onclick="dealHand()">Deal 'Em, Cowboy! </div>
+		    {% elif results['player'].is_admin %}
+			<div class="start-button"> Waiting for more players... </div>
+		    {% else %}
+			<div class="start-button"> Waiting for admin to start game... </div>
                     {% endif %}
                 </div>
                <!--  <div class="street-pot-info flex-row">
@@ -135,7 +143,7 @@
                 <div class="flex-col button-col col-xs-8">
                 {% if results['currently_playing_seats'][results['player'].seat_num] %}
                     {% if results['folded_players'] and results['folded_players'][results['player'].seat_num] %}
-                        <div class="dash-button" id="sit-out-button" onclick="toggleSitOut()">Sit Out</div>
+			<!-- do nothing, used to have a sit out button here -->
                     {% else %}
                         {% if results['can_bet'][results['player'].seat_num] %}
                             <div class="dash-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="check-button" onclick="check()">Check</div>
@@ -159,12 +167,6 @@
                             {% endif %}
                         {% endif %}
                         <div class="dash-button {% if results['seat_to_act'] != results['player'].seat_num %}disabled {% endif %}" id="fold-button" onclick="fold()">Fold</div>
-                    {% endif %}
-                {% else %}
-                    {% if results['session'].poker_hand and results['sitting_out_players'][results['player'].seat_num] %}
-                        <div class="dash-button" id="sit-in-button" onclick="toggleSitOut()">Deal Me In</div>
-                    {% else %}
-                        <div class="dash-button" id="sit-out-button" onclick="toggleSitOut()">Sit Out</div>
                     {% endif %}
                 {% endif %}
                 </div>

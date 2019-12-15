@@ -43,20 +43,20 @@ class Player(db.Model):
 	stack_size = db.Column(db.Float)
 	has_button = db.Column(db.Boolean)
 	is_admin = db.Column(db.Boolean)
-	is_sitting_out = db.Column(db.Boolean)
+	sit_out_next_hand = db.Column(db.Boolean)
 	is_on_standby = db.Column(db.Boolean)
 	poker_session_id = db.Column(UUIDType(binary = False), \
 		db.ForeignKey('poker_sessions.id'))
 
 	def __init__(self, username = None, email = None, stack_size = None, seat_num = None, \
-				has_button = False, is_admin = False, is_sitting_out = False, is_on_standby = False):
+				has_button = False, is_admin = False, sit_out_next_hand = False, is_on_standby = False):
 		self.username = username
 		self.seat_num = seat_num
 		self.email = email
 		self.stack_size = stack_size
 		self.has_button = has_button
 		self.is_admin = is_admin
-		self.is_sitting_out = is_sitting_out
+		self.sit_out_next_hand = sit_out_next_hand
 		self.is_on_standby = is_on_standby
 
 

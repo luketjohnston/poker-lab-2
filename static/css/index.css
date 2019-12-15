@@ -1,5 +1,11 @@
 html, body { height: 100%; width: 100%; margin: 0; }
 
+#sitout {
+  position: fixed;
+  bottom: 0;
+  right: 10; 
+}
+
 @font-face {
     font-family: GothamRounded;
     src: url(../fonts/GothamRoundedBook_21018.ttf);

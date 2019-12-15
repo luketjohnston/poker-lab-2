@@ -11,19 +11,13 @@ var outbox = new ReconnectingWebSocket(ws_scheme + location.host + "/submit");
 var gamestate = {};
 
 inbox.onmessage = function(message) {
-	console.log("in onmessage")
 	var pathname = window.location.pathname;
 	var pathParts = pathname.split( '/' );
 	var sessionID = pathParts[1];
 	message.data.text().then(function(text) {
 	  var data = JSON.parse(text);
-	  console.log(data);
 	  if(data['session_id'] === sessionID) {
 	  	gamestate_dict = data;
-	  	if(data['pause_for_hand_end']) {
-	  		$('#sit-out-button').addClass('disabled');
-	  		$('#sit-in-button').addClass('disabled');
-		}
 		updateDisplay(data);
 	  }
 	});
@@ -82,7 +76,6 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 			var seat = $( "#seat-"+visIdx );
 			// If that seat is filled
 			if(results.filled_seats[i]) {
-				console.log(i)
 				if(seat.hasClass("unoccupied")) {
 					seat.removeClass("unoccupied");
 				}
@@ -185,26 +178,17 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 				}
 				var showBet = true;
 				// update showing cards
-				console.log('Show bet start: ' + showBet);
 				if(results.hasOwnProperty('showing_cards')) {
-					console.log("IN HERE SHOWING CARDS 1");
 					if(results.showing_cards.hasOwnProperty(i)) {
-						console.log("IN HASOWNPROPERTY 2");
 
 						var showCardsRow = $( "#show-cards-row-" + visIdx );
 						var showCards = showCardsRow.children('.card');
-						console.log('showCards');
-						console.log(showCards);
 						if(showCards.length !== 0) {
 							showCards.remove();
 						}
-						console.log(results.showing_cards);
-						console.log('above is results.showing_cards');
 						for(var j=0; j < results.showing_cards[i].length; j++) {
 							var card = createCardDiv(results.showing_cards[i][j]);
 							card.appendTo(showCardsRow);
-							console.log('CARD');
-							console.log(card);
 							showBet = false;
 						}
 						// In order to avoid crowding, don't show the bet if the player
@@ -213,7 +197,6 @@ function updateSeatInfo(results, playerSeatNum, pokerTable) {
 				}
 				// update bets
 				// first check if there are any bets
-				console.log('Show bet end: ' + showBet);
 				if(showBet) {
 					if(results.hasOwnProperty('current_bets')) {
 						// only display the bets if this player is not
@@ -369,7 +352,6 @@ function createCardDiv(cardObj) {
 
 function startNewHand(results) {
 	var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
-	console.log("END PAUSE");
 	if(results['admin_seat'] === playerSeatNum) {
 		var pathname = window.location.pathname;
 		var pathParts = pathname.split( '/' );
@@ -390,9 +372,36 @@ function updateDisplay(results) {
 	// just remove all board, we will add it back later
 	$('#board-row').children().remove();
 
-	console.log('Double dunkers')
 	// Get the seat number of the player running this instance
 	var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
+	var isAdmin = (playerSeatNum === results['admin_seat']);
+
+        // if nothing's going on, add the "deal em cowboy" button and the like:
+	if (!results['playable_table']) {
+		if (isAdmin && results['players_sitting_in_next_hand'] > 1) {
+			var dealEm = $('<div/>', {
+				class: 'start-button',
+				onclick: 'dealHand()',
+				text: "Deal 'Em, Cowboy!",
+			});
+			$('#board-row').append(dealEm);
+		} else if (isAdmin) {
+			var waiting = $('<div/>', {
+				class: 'start-button',
+				text: "Waiting for more players...",
+			});
+			$('#board-row').append(waiting);
+		} else {
+			var waiting = $('<div/>', {
+				class: 'start-button',
+				text: "Waiting for admin to start game...",
+			});
+			$('#board-row').append(waiting);
+		}
+	}
+			
+		
+
 	var pokerTable = $( ".poker-table" );
 	// Update info regarding seat occupation, player stacks,
 	// and bets
@@ -400,12 +409,9 @@ function updateDisplay(results) {
 
 	// Update the board cards
 	var boardCards = $('#board-row').children('.card');
-	// console.log(boardCards);
-	// console.log('BOARD: ' + results.board);
 	for(var i=boardCards.length; i < results.board.length; i++) {
 		var card = createCardDiv(results.board[i]);
 		card.appendTo(pokerTable.find('.card-row'));
-		console.log(card);
 	}
 	// Update this player's hole cards
 	var holeCardsRow = $( "#hole-cards-row" );
@@ -451,21 +457,7 @@ function updateDisplay(results) {
 			$( '.player-dash' ).addClass('folded');
 			// remove action-on styling
 			$( '.player-dash' ).removeClass('action-on');
-			// If player is folded and currently playing, it has the
-			// option to sit out
-			if($('#sit-out-button').length === 0) {
-				buttonColumn.prepend($('<div/>', {
-					class: 'dash-button',
-					id: 'sit-out-button',
-					onclick: 'toggleSitOut()',
-					text: 'Sit Out'
-				}));
-			}
 		} else {
-			// Remove sit-out button if present
-			if($('#sit-out-button').length !== 0) {
-				$('#sit-out-button').remove();
-			}
 			// remove folded class to deactivate adding to stack
 			$( '.player-dash' ).removeClass('folded');
 			// Check if this player can bet
@@ -637,29 +629,6 @@ function updateDisplay(results) {
 		$( '.player-dash' ).addClass('folded');
 		// remove action-on styling
 		$( '.player-dash' ).removeClass('action-on');
-		// if this player has a large enough stack to play again
-		if(results.sitting_out_players && results.sitting_out_players[playerSeatNum]) {
-			var bigBlind = parseFloat($( "#big-blind" ).attr("data"));
-			if(results['stacks'][playerSeatNum] > bigBlind) {
-				if($('#sit-in-button').length === 0) {
-					buttonColumn.prepend($('<div/>', {
-						class: 'dash-button',
-						id: 'sit-in-button',
-						onclick: 'toggleSitOut()',
-						text: 'Deal Me In'
-					}));
-				}
-			}
-		} else {
-			if($('#sit-out-button').length === 0) {
-				buttonColumn.prepend($('<div/>', {
-					class: 'dash-button',
-					id: 'sit-out-button',
-					onclick: 'toggleSitOut()',
-					text: 'Sit Out'
-				}));
-			}
-		}
 	}
 	// Update dash dealer button
 	if(results['button_seat'] === playerSeatNum) {
@@ -709,10 +678,7 @@ function bet() {
 	// TODO add check that bet is large enough
 	var betAmount = parseFloat($( '#bet-input' ).val());
 	var stackAmount = parseFloat($( '.dash-stack' ).text());
-	// console.log('Bet: ' + betAmount);
-	// console.log('Stack: ' + stackAmount);
 	if(betAmount < stackAmount) {
-		// console.log('Good bet: ' + betAmount);
 		var pathname = window.location.pathname;
 		var pathParts = pathname.split( '/' );
 		var sessionID = pathParts[1];
@@ -748,11 +714,7 @@ function raise() {
 	if($('#bet-info-0').length !== 0) {
 		currentBet = parseFloat($('#bet-info-0').find('.bet-num').text());
 	}
-	// console.log('Raise: ' + raiseAmount);
-	// console.log('Stack: ' + stackAmount);
-	// console.log('Current Bet: ' + currentBet);
 	if(raiseAmount < (stackAmount + currentBet)) {
-		// console.log('Good raise: ' + raiseAmount);
 		var pathname = window.location.pathname;
 		var pathParts = pathname.split( '/' );
 		var sessionID = pathParts[1];
@@ -764,13 +726,11 @@ function raise() {
 	} else if(raiseAmount === (stackAmount + currentBet)) {
 		allIn();
 	} else {
-		console.log('Bad raise: ' + raiseAmount);
 	}
 }
 
 
 function allIn() {
-	// console.log('All in');
 	var pathname = window.location.pathname;
 	var pathParts = pathname.split( '/' );
 	var sessionID = pathParts[1];
@@ -793,15 +753,13 @@ function fold() {
 
 
 function toggleSitOut() {
-	if(!$('#sit-out-button').hasClass('disabled') && !$('#sit-in-button').hasClass('disabled')) {
-		var pathname = window.location.pathname;
-		var pathParts = pathname.split( '/' );
-		var sessionID = pathParts[1];
-		var userID = pathParts[2];
-		outbox.send(JSON.stringify({ 	func: 'toggle-sit-out',
-										user_id: userID, 
-										session_id: sessionID}));
-	}
+	var pathname = window.location.pathname;
+	var pathParts = pathname.split( '/' );
+	var sessionID = pathParts[1];
+	var userID = pathParts[2];
+	outbox.send(JSON.stringify({ 	func: 'toggle-sit-out',
+									user_id: userID, 
+									session_id: sessionID}));
 }
 
 
@@ -830,7 +788,6 @@ function addPlayer(seat_num) {
 											user_id: userID, 
 											email: email,
 											seat_num: seat_num});
-			console.log("sentthing: " + sentthing)
 			outbox.send(sentthing);
 			setTimeout(function(){ 
 				swal({
@@ -867,11 +824,9 @@ function addPlayer(seat_num) {
 	// });
 
 	// $('.player-dash').hover(function() {
-	// 	console.log("CAN ADD: " + canAddToStack(0));
 	// 	if(canAddToStack(0)) {
 	// 		// Fade in button when mouse hovers over byline
 	// 		$(this).find('.byline-button').fadeIn(200);
-	// 		console.log($(this).find('.byline-button'));
 	// 	}
  //    	}, 
  //    	function(){
@@ -892,7 +847,6 @@ function canAddToStack(seat_num) {
 	if(seat_num === 0) {
 		selectedPlayerIsFolded = $('.player-dash').hasClass('folded');
 	}
-	console.log("DASH FOLD: " + $('.player-dash').hasClass('folded'));
 	var currentPlayerIsAdmin = $( "#is-admin" ).attr("data") === 'True';
 	return selectedPlayerIsFolded && currentPlayerIsAdmin;
 }
@@ -927,16 +881,11 @@ function addToPlayerStack(seat_num) {
 				}
 				var maxBuyIn = parseFloat($( "#max-buy-in" ).attr("data"));
 				var bigBlind = parseFloat($( "#big-blind" ).attr("data"));
-				// console.log(amountToAdd);
-				// console.log(stackAmount);
-				// console.log(maxBuyIn);
-				// console.log(bigBlind);
 				var playerSeatNum = parseInt($( "#seat-number" ).attr("data"));
 				real_seat_num = mod(seat_num + playerSeatNum, 10);
 				if(real_seat_num === 0) {
 					real_seat_num = 10
 				}
-				// console.log(real_seat_num);
 				if((amountToAdd + stackAmount) <= maxBuyIn && (amountToAdd + stackAmount) > bigBlind) {
 					var pathname = window.location.pathname;
 					var pathParts = pathname.split( '/' );

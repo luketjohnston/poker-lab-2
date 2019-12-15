@@ -260,7 +260,8 @@ def bet(current_session_id, player_id, bet_size):
 
 
 	player_id = int(player_id)
-	bet_size = float(bet_size)
+	bet_size = round(float(bet_size), 2)
+	
 
 	#get session, gamestate, player trying to bet, and street
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
@@ -271,6 +272,9 @@ def bet(current_session_id, player_id, bet_size):
 	current_player_object = current_game_state.get_player_at_seat(seat_num)
 	current_street = current_game_state.street
 
+	if bet_size < current_game_state.small_blind * 2:
+		return "that bet is too small you fucking nit"
+
 	
 	if current_player_object == current_game_state.player_to_act:
 		# TODO need to add check that bet is valid and an integer
@@ -278,6 +282,7 @@ def bet(current_session_id, player_id, bet_size):
 		#If the player is able to bet, it means no one has entered the pot and thus
 		#the player must be the last_valid_raiser
 		current_game_state.last_valid_raiser = current_player_object
+		current_game_state.last_raise = bet_size
 
 		#Update player stack and add bet to the bet list
 		#Can remove betsize from stack directly, because player cannot bet
@@ -387,6 +392,7 @@ def player_raise(current_session_id, player_id, raise_size):
 	player_id = int(player_id)
 	raise_size = float(raise_size)
 
+
 	current_session = PokerSession.query.filter_by(id = current_session_id).first()
 	current_hand = current_session.poker_hand
 	current_player = Player.query.filter_by(id = player_id, poker_session_id = current_session_id).first()
@@ -396,9 +402,16 @@ def player_raise(current_session_id, player_id, raise_size):
 
 	# TODO check that raise is valid and convert to integer
 
+	if raise_size < current_game_state.get_min_raise(current_player_object):
+		return 'Raise is too small you fucking nit'
+		
+
 	if current_game_state.raising_allowed == True:
 		if current_player_object == current_game_state.player_to_act:
 
+			# need to do this before we update last_valid_raiser
+			# TODO should have this update happen in a game_state function. Shouldn't be publicly modifiable
+			current_game_state.last_raise = current_game_state.get_raise_amount(current_player_object, raise_size)
 			#This player is making a valid raise so set as the last_valid_raiser
 			current_game_state.last_valid_raiser = current_player_object
 
@@ -414,7 +427,7 @@ def player_raise(current_session_id, player_id, raise_size):
 			clean_up(current_session_id, seat_num, current_game_state, current_session, player_id)
 
 
-	return 'Success.'
+		return 'Success.'
 
 
 def check(current_session_id, player_id):

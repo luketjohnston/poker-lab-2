@@ -14,27 +14,28 @@ class GameState:
 		self.pause_for_street_end = False
 		self.pause_for_hand_end = False
 		self.run_board = False
-		self.player_to_act = None #This is set when post_blinds() function is called
-		self.last_valid_raiser = None #also set by post_blinds()
+		self.player_to_act = None         # This is set when post_blinds() function is called
+		self.last_valid_raiser = None     # also set by post_blinds()
+		self.last_raise = None            # also set by post_blinds()
 		
-		#Sort self.player_list according to distance ahead of the button
+		# Sort self.player_list according to distance ahead of the button
 		button_player = self.get_player_at_seat(button_position)
 		player_list = sorted(player_list, key = lambda x: x.seat_num)
 		player_list = sorted(player_list, key = lambda x: (player_list.index(x)-player_list.index(button_player)) % len(player_list))
 		self.player_list = player_list
 	
 	def get_live_players(self):
-		#get list of player_objects still capable of acting, sorted according to distance from the button
+		# get list of player_objects still capable of acting, sorted according to distance from the button
 		live_players = []
 		for player_object in self.player_list:
-			#check to see if player has folded or is all-in, if not, add to list
+			# check to see if player has folded or is all-in, if not, add to list
 			if player_object.is_folded == False and player_object.is_all_in == False:
 				live_players.append(player_object)
 
 		return live_players
 
 	def get_folded_players(self):
-		#get list of folded player_objects sorted to ascending seat number
+		# get list of folded player_objects sorted to ascending seat number
 		folded_players = []
 		for player_object in self.player_list:
 			if player_object.is_folded == True:
@@ -42,7 +43,7 @@ class GameState:
 		return folded_players
 
 	def get_unfolded_players(self):
-		#get list of unfolded player_objects sorted to ascending seat number
+		# get list of unfolded player_objects sorted to ascending seat number
 		unfolded_players = []
 		for player_object in self.player_list:
 			if player_object.is_folded == False:
@@ -50,12 +51,12 @@ class GameState:
 		return unfolded_players
 
 	def get_player_to_left(self, player):
-		#returns player to left of input player
+		# returns player to left of input player
 		index = self.player_list.index(player)
 		return self.player_list[(index +1) % len(self.player_list)]
 
 	def get_live_player_to_left(self,player):
-		#returns next live player to left of input player
+		# returns next live player to left of input player
 		live_players = self.get_live_players()
 		button_player = self.get_player_at_seat(self.button_position)
 		if player not in live_players:
@@ -68,7 +69,7 @@ class GameState:
 		return player_to_left
 
 	def get_unfolded_player_to_left(self,player):
-		#returns next unfolded player to left of input player
+		# returns next unfolded player to left of input player
 		unfolded_players = self.get_unfolded_players()
 		button_player = self.get_player_at_seat(self.button_position)
 		if player not in unfolded_players:
@@ -81,18 +82,18 @@ class GameState:
 		return player_to_left
 
 	def get_player_to_right(self, player):
-		#return player to right of input player
+		# return player to right of input player
 		index = self.player_list.index(player)
 		return self.player_list[(index - 1) % len(self.player_list)]
 
 	def get_player_at_seat(self, seat):
-		#get the player_object corresponding to a certain seat number
+		# get the player_object corresponding to a certain seat number
 		for player_object in self.player_list:
 			if player_object.seat_num == seat:
 				return player_object
 
 	def is_action_closed(self):
-		#test to see if action is closed
+		# test to see if action is closed
 		live_players = self.get_live_players()
 		unfolded_players = self.get_unfolded_players()
 
@@ -122,7 +123,7 @@ class GameState:
 		## check to see if action should go to the big blind for his option preflop.
 		if self.street == 0 and live_players[0].current_bet < 4*self.small_blind:
 
-			##check if it is not heads up
+			## check if it is not heads up
 			if len(self.player_list) >2:
 
 			## Here, player_to_act is the player that fired the route. Must check if that player is the small blind 
@@ -149,12 +150,18 @@ class GameState:
 	def get_min_raise(self, player):
 		#Returns the minimum raise amount for player given the current
 		#valid raise and current max bet
-		largest_current_bet = self.get_max_current_bet()
 
-		if self.last_valid_raiser:
-			return (self.last_valid_raiser.current_bet)*2 - player.current_bet + (largest_current_bet - self.last_valid_raiser.current_bet)
+		if self.last_valid_raiser: # last_valid_raiser is set when someone raises for the first time
+			return self.last_valid_raiser.current_bet + self.last_raise
 		else:
 			return 0
+
+	def get_raise_amount(self, player, bet_size):
+		# returns the size of a raise, given the total bet size
+		if self.last_valid_raiser:
+			return (bet_size - self.last_valid_raiser.current_bet)
+		else:
+			return bet_size
 
 	def post_blinds(self):
 		#update the total_bet of the small/big blind. 
@@ -177,8 +184,9 @@ class GameState:
 
 			self.player_to_act = self.player_list[3 % len(self.player_list)]
 			self.last_valid_raiser = self.player_list[2]
+			self.last_raise = self.small_blind * 2
 
-		##If there are only two players, the preflop betting must be reversed.
+		## If there are only two players, the preflop betting must be reversed.
 		else:
 			self.player_list[0].total_bet = self.small_blind
 			self.player_list[0].current_bet = self.small_blind
@@ -189,6 +197,8 @@ class GameState:
 			self.player_list[1].stack_size = self.player_list[1].stack_size - 2*self.small_blind
 
 			self.player_to_act = self.player_list[0]
+			self.last_valid_raiser = self.player_list[1]
+			self.last_raise = small_blind * 2
 
 	def can_bet(self, player):
 
